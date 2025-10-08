@@ -4,10 +4,11 @@ WORKDIR /app
 
 RUN npm config set script-shell /bin/bash
 
-#COPY package.json ./
+COPY Web-El-Imperio-del-Dinero/package.json ./
 RUN npm install -g @angular/cli
+RUN npm install
 
-COPY . .
+#COPY . .
 
 RUN mkdir -p /mnt/c/Windows/System32/WindowsPowerShell/v1.0 \
     && touch /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
@@ -15,4 +16,4 @@ RUN mkdir -p /mnt/c/Windows/System32/WindowsPowerShell/v1.0 \
 
 EXPOSE 4200
 
-CMD ["ng", "new", "Web-El-Imperio-del-Dinero"]
+CMD ["ng", "serve", "-o", "--host", "0.0.0.0", "--port", "4200"]
