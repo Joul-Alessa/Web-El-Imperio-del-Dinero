@@ -1,0 +1,13 @@
+services:
+  web-el-imperio-del-dinero-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "4200:4200"
+    environment:
+      BROWSER: "none"
+      SHELL: "/bin/bash"
+      NODE_ENV: "local"
