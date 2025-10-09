@@ -5,6 +5,7 @@ WORKDIR /app
 RUN npm config set script-shell /bin/bash
 
 COPY Web-El-Imperio-del-Dinero/package.json ./
+COPY Web-El-Imperio-del-Dinero/package-lock.json ./
 RUN npm install -g @angular/cli
 RUN npm install
 

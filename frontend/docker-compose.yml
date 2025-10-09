@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./Web-El-Imperio-del-Dinero:/app
+      - /app/node_modules
     ports:
       - "4200:4200"
     environment:
