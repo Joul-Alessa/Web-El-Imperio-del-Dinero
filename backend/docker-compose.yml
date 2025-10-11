@@ -1,0 +1,13 @@
+services:
+  web-el-imperio-del-dinero-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      BROWSER: "none"
+      SHELL: "/bin/bash"
+      NODE_ENV: "local"
