@@ -33,3 +33,12 @@ body {
   // Reset the user agent margin.
   margin: 0;
 }
+
+.header {
+  /* Fondo del header con el color primario del tema (cyan) */
+  background-color: var(--mat-sys-primary);
+
+  /* Texto con el color sobre primario (legible sobre el fondo) */
+  color: var(--mat-sys-on-primary);
+
+}
