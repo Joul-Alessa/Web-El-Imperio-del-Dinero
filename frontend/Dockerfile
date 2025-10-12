@@ -9,6 +9,8 @@ COPY Web-El-Imperio-del-Dinero/package-lock.json ./
 RUN npm install -g @angular/cli
 RUN npm install
 
+COPY Web-El-Imperio-del-Dinero/ .
+
 RUN mkdir -p /mnt/c/Windows/System32/WindowsPowerShell/v1.0 \
     && touch /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
     && chmod +x /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
