@@ -4,12 +4,12 @@ WORKDIR /app
 
 RUN npm config set script-shell /bin/bash
 
-COPY Web-El-Imperio-del-Dinero/package.json ./
-COPY Web-El-Imperio-del-Dinero/package-lock.json ./
+COPY package.json ./
+COPY package-lock.json ./
 RUN npm install -g @angular/cli
 RUN npm install
 
-COPY Web-El-Imperio-del-Dinero/ .
+COPY . .
 
 RUN mkdir -p /mnt/c/Windows/System32/WindowsPowerShell/v1.0 \
     && touch /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
