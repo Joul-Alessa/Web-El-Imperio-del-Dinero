@@ -5,10 +5,14 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./Web-El-Imperio-del-Dinero:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
     ports:
       - "4200:4200"
     environment:
       BROWSER: "none"
       SHELL: "/bin/bash"
       NODE_ENV: "local"
+      CHOKIDAR_USEPOLLING: "true"
+    command: sh -c "npm install && ng serve --host 0.0.0.0 --port 4200 --poll 2000"
+volumes:
+  node_modules:
