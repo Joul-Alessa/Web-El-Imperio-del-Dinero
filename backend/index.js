@@ -5,7 +5,7 @@ import helmet from 'helmet';
 const app = express();
 // import config from './startup/config.js';
 import './startup/db.js';
-// import routes from './startup/routes.js';
+import routes from './startup/routes.js';
 
 
 dotenv.config();
@@ -13,7 +13,7 @@ dotenv.config();
 app.use(morgan(":date[clf] :method :url :status :res[content-length] - :response-time ms"));
 app.use(helmet());
 
-// routes(app);
+routes(app);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.info("Listening on port " + port));
