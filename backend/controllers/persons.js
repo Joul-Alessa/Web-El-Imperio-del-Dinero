@@ -1,9 +1,8 @@
-import PersonaModel from '../models/persons.model.js';
+import PersonaModel from '../models/persons.js';
 
 const PersonaController = {
   getAll: async (req, res) => {
     try {
-      console.log("aaaaaa");
       const personas = await PersonaModel.findAll();
       res.status(200).json(personas);
     } catch (error) {
