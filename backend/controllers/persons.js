@@ -1,10 +1,10 @@
-import PersonaModel from '../models/persons.js';
+import PersonModel from '../models/persons.js';
 
-const PersonaController = {
+const PersonController = {
   getAll: async (req, res) => {
     try {
-      const personas = await PersonaModel.findAll();
-      res.status(200).json(personas);
+      const persons = await PersonModel.findAll();
+      res.status(200).json(persons);
     } catch (error) {
       console.error(error);
       res.status(500).json({
@@ -14,4 +14,4 @@ const PersonaController = {
   }
 };
 
-export default PersonaController;
+export default PersonController;
