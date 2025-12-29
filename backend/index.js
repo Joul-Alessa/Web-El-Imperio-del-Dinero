@@ -12,6 +12,7 @@ dotenv.config();
 
 app.use(morgan(":date[clf] :method :url :status :res[content-length] - :response-time ms"));
 app.use(helmet());
+app.use(express.urlencoded({ extended: true }));
 
 routes(app);
 

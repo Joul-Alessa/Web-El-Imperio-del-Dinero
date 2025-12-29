@@ -1,6 +1,6 @@
 import pool from '../startup/db.js';
 
-const PersonaModel = {
+const PersonModel = {
   findAll: async () => {
     const query = `
       SELECT *
@@ -12,4 +12,4 @@ const PersonaModel = {
   }
 };
 
-export default PersonaModel;
+export default PersonModel;

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import PersonaController from '../controllers/persons.js';
+import PersonController from '../controllers/persons.js';
 
 const router = Router();
 
-router.get('/', PersonaController.getAll);
+router.get('/', PersonController.getAll);
 
 export default router;
