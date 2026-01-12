@@ -6,6 +6,14 @@ Mucho texto del backend
 
 Los endpoints de la API que expone el BackEnd son los siguientes:
 
+### GET /apí/persons
+
+Obtiene a todas las personas
+
+No es requerido ningún header en el envío del request
+
+La response tiene una estructura como la siguiente:
+
 ```json
 [
   {
@@ -23,27 +31,6 @@ Los endpoints de la API que expone el BackEnd son los siguientes:
   {
     "id": 4,
     "nombre": "Persona4"
-  }
-]
-```
-
-### GET /apí/persons
-
-Obtiene a todas las personas
-
-No es requerido ningún header en el envío del request
-
-La response tiene una estructura como la siguiente:
-
-```json
-[
-  {
-    "id": 1,
-    "nombre": "Ingreso"
-  },
-  {
-    "id": 2,
-    "nombre": "Gasto"
   }
 ]
 ```
