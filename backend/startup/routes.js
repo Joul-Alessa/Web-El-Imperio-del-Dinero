@@ -3,7 +3,7 @@ import express from 'express';
 import persons from '../routes/persons.js'; // personas
 import types from '../routes/types.js'; // tipos
 import accounts from '../routes/accounts.js'; // cuentas
-//movimientos
+import movements from '../routes/movements.js';//movimientos
 
 export default function (app){
   app.use(express.json());  
@@ -11,4 +11,5 @@ export default function (app){
   app.use('/api/persons', persons);
   app.use('/api/types', types);
   app.use('/api/accounts', accounts);
+  app.use('/api/movements', movements);
 }
