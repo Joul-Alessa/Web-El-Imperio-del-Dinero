@@ -4,9 +4,11 @@ WORKDIR /app
 
 RUN npm config set script-shell /bin/bash
 
-COPY . .
+COPY package*.json ./
 
 RUN npm install
+
+COPY . .
 
 RUN mkdir -p /mnt/c/Windows/System32/WindowsPowerShell/v1.0 \
     && touch /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
