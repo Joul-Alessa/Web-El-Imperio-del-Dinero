@@ -33,33 +33,19 @@ const AccountModel = {
     const query = `
       UPDATE cuentas
       SET nombre = $2
-      WHERE id = $1;
-    `;
-    await pool.query(query, [req.id, req.nombre]);
-
-    const queryReturn = `
-      SELECT *
-      FROM cuentas
       WHERE id = $1
-      ORDER BY id;
+      RETURNING *;
     `;
-    const { rows } = await pool.query(queryReturn, [req.id]);
+    const { rows } = await pool.query(query, [req.id, req.nombre]);
     return rows[0] || null;
   },
   deleteOne: async (id) => {
-    const queryReturn = `
-      SELECT *
-      FROM cuentas
-      WHERE id = $1
-      ORDER BY id;
-    `;
-    const { rows } = await pool.query(queryReturn, [id]);
-    
     const query = `
       DELETE FROM cuentas
-      WHERE id = $1;
+      WHERE id = $1
+      RETURNING *;
     `;
-    await pool.query(query, [id]);
+    const { rows } = await pool.query(query, [id]);
 
     return rows[0] || null;
   },
