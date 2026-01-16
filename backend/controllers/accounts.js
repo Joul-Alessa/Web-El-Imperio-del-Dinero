@@ -12,18 +12,11 @@ const AccountController = {
         });
       }
 
-      const query = `
-        INSERT INTO cuentas (nombre)
-        VALUES ($1)
-        RETURNING *;
-      `;
-
-      const values = [nombre];
-      const { rows } = await pool.query(query, values);
+      const accounts = await AccountModel.create(nombre);
       
       return res.status(201).json({
         message: 'Cuenta creada correctamente',
-        data: rows[0]
+        data: accounts
       });
     } catch (error) {
       console.error(error);

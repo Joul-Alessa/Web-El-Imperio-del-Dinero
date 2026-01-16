@@ -1,6 +1,15 @@
 import pool from '../startup/db.js';
 
 const AccountModel = {
+  create: async (req) => {
+    const query = `
+      INSERT INTO cuentas (nombre)
+      VALUES ($1)
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [req]);
+    return rows[0] || null;
+  },
   findAll: async () => {
     const query = `
       SELECT *
