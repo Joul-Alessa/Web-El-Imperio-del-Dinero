@@ -7,8 +7,14 @@ const app = express();
 import './startup/db.js';
 import routes from './startup/routes.js';
 
+import cors from 'cors';
 
 dotenv.config();
+
+app.use(cors({
+  origin: 'http://localhost:4200',
+  credentials: true
+}));
 
 app.use(morgan(":date[clf] :method :url :status :res[content-length] - :response-time ms"));
 app.use(helmet());
