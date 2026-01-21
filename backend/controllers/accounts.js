@@ -1,5 +1,4 @@
 import AccountModel from '../models/accounts.js';
-import pool from '../startup/db.js';
 
 const AccountController = {
   create: async (req, res) => {

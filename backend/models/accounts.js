@@ -48,7 +48,7 @@ const AccountModel = {
     const { rows } = await pool.query(query, [id]);
 
     return rows[0] || null;
-  },
+  }
 };
 
 export default AccountModel;
