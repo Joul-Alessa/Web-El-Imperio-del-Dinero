@@ -1,5 +1,4 @@
 import AccountModel from '../models/accounts.js';
-import pool from '../startup/db.js';
 
 const AccountController = {
   create: async (req, res) => {
@@ -12,18 +11,11 @@ const AccountController = {
         });
       }
 
-      const query = `
-        INSERT INTO cuentas (nombre)
-        VALUES ($1)
-        RETURNING *;
-      `;
-
-      const values = [nombre];
-      const { rows } = await pool.query(query, values);
+      const accounts = await AccountModel.create(nombre);
       
       return res.status(201).json({
         message: 'Cuenta creada correctamente',
-        data: rows[0]
+        data: accounts
       });
     } catch (error) {
       console.error(error);
