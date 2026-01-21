@@ -2,10 +2,10 @@
     min-height: 100dvh;
 }
 
-.boton-anadir{
+.button-add{
     position: fixed;           /* se mantiene fijo al hacer scroll */
     top: 90%;
     left: 50%;                 /* centrado horizontal */
     transform: translate(-50%, -25%);  /* ajusta al centro exacto */
-    z-index: 9999;             /* siempre encima de todo */
+    z-index: 10;             /* siempre encima de todo */
 }

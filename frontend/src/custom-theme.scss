@@ -1,44 +1,99 @@
-
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+// 1. Configuramos Material
+@include mat.core();
+
+// 2. Tus colores
+$my-primary: mat.$cyan-palette;
+$my-tertiary: mat.$orange-palette;
+
+// 3. Definimos los temas
+$light-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: $my-primary,
+    tertiary: $my-tertiary,
+  ),
+  typography: (
+    plain-family: 'Roboto, sans-serif',
+    brand-family: 'Roboto, sans-serif',
+  ),
+  density: ( scale: 0 )
+));
+
+$dark-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: $my-primary,
+    tertiary: $my-tertiary,
+  )
+));
+
+// =======================================================
+// APLICACIÓN DE TEMAS
+// =======================================================
+
+// TEMA CLARO (Por defecto en HTML)
 html {
-  @include mat.theme((
-    color: (
-      primary: mat.$cyan-palette,
-      tertiary: mat.$orange-palette,
-    ),
-    typography: Roboto,
-    density: 0,
-  ));
+  @include mat.all-component-themes($light-theme);
+  @include mat.system-level-colors($light-theme);
+  @include mat.system-level-typography($light-theme);
 }
 
-body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
+// TEMA OSCURO (Cuando HTML tiene la clase .dark-theme)
+html.dark-theme {
+  @include mat.all-component-themes($dark-theme);
+  @include mat.system-level-colors($dark-theme);
+  @include mat.system-level-typography($dark-theme);
+  
+  // --- CORRECCIÓN 1: FORZAR FONDO OSCURO EN EL BODY ---
+  // Al ponerlo aquí dentro, sobreescribimos cualquier duda del navegador.
+  body {
+    background-color: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+  }
 
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
+  // --- CORRECCIÓN 2: ARREGLAR TABLAS Y TABS ---
+  // Forzamos a que estos componentes usen el color de fondo del sistema (negro/gris)
+  // en lugar de quedarse con el blanco por defecto.
+  
+  .mat-mdc-table,         // Para mat-table
+  .mat-mdc-tab-group,     // Para mat-tab-group
+  .mat-mdc-tab-header,    // Cabecera de los tabs
+  .mat-mdc-paginator,     // Paginadores
+  .mat-mdc-card {         // Cards
+    background-color: var(--mat-sys-surface) !important;
+    color: var(--mat-sys-on-surface) !important;
+  }
+}
 
-  // Reset the user agent margin.
+// =======================================================
+// ESTILOS GLOBALES
+// =======================================================
+
+html, body {
+  height: 100%;
   margin: 0;
 }
 
+body {
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  
+  // Valores por defecto (Claro)
+  background-color: var(--mat-sys-background);
+  color: var(--mat-sys-on-background);
+  
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+// =======================================================
+// TUS ESTILOS PERSONALIZADOS
+// =======================================================
+
 .header {
-  /* Fondo del header con el color primario del tema (cyan) */
+  width: 100%;
+  // Usamos surface-container-high en oscuro para que resalte un poco del fondo negro total
+  // O usa --mat-sys-primary si prefieres el bloque Cyan sólido siempre.
   background-color: var(--mat-sys-primary);
-
-  /* Texto con el color sobre primario (legible sobre el fondo) */
   color: var(--mat-sys-on-primary);
-
 }

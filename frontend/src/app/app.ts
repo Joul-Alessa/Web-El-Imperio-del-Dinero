@@ -13,11 +13,8 @@ import {MatButtonModule} from '@angular/material/button';
 })
 export class App {
   protected readonly title = signal('Web-El-Imperio-del-Dinero');
-
-  ola = 0
-
-  wenas(){
+  
+  addMovement(){
     alert("wenas");
-    this.ola++;
   }
 }
