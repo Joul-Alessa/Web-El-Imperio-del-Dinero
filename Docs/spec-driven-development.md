@@ -34,7 +34,7 @@ Each step is self-contained. Instruct your AI agent to implement and test ONE st
 - Every variable, table, field or text the user doesn't watch and only the dev team must be in English
 - App does NOT need a login nor a password. Everything is open to access to everyone who consumes the app
 - If needed to make database changes, use Knex.js migrations
-- Do not write files like package.json. Instead run the commands like the npm initializacion or the corresponding installing dependencies commands.
+- Do not write files like package.json. Instead run the commands like the npm initialization or the corresponding installing dependencies commands.
 
 ## Step 1: Project Setup & Database Schema Base
 
