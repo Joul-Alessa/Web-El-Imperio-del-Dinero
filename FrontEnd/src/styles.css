@@ -6,3 +6,22 @@ html, body {
   height: 100%;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
+
+* { box-sizing: border-box; }
+
+input, select, button, textarea {
+  font-size: 16px;
+}
+
+table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .summary { flex-direction: column; }
+  .charts { flex-direction: column; }
+  .chart-box { min-height: 250px; }
+  mat-drawer { width: 200px !important; }
+}
