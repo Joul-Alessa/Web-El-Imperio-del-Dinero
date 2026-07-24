@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/connection.js';
-import { users, institutions, accounts } from '../db/schema.js';
+import { users, institutions, accounts, categories, transactions } from '../db/schema.js';
 
 export const seedRouter = Router();
 
@@ -25,11 +25,25 @@ seedRouter.post('/', (_req, res) => {
     { name: 'Cash', icon: 'cash' },
   ]).returning().all();
 
-  res.status(201).json({ users: userData, institutions: institutionData });
+  const categoryData = db.insert(categories).values([
+    { name: 'Nómina', type: 'INCOME' },
+    { name: 'Ingreso extra', type: 'INCOME' },
+    { name: 'Alimentación', type: 'EXPENSE' },
+    { name: 'Transporte', type: 'EXPENSE' },
+    { name: 'Servicios', type: 'EXPENSE' },
+    { name: 'Entretenimiento', type: 'EXPENSE' },
+    { name: 'Salud', type: 'EXPENSE' },
+    { name: 'Renta', type: 'EXPENSE' },
+    { name: 'Transferencia', type: 'TRANSFER' },
+  ]).returning().all();
+
+  res.status(201).json({ users: userData, institutions: institutionData, categories: categoryData });
 });
 
 seedRouter.delete('/', (_req, res) => {
+  db.delete(transactions).run();
   db.delete(accounts).run();
+  db.delete(categories).run();
   db.delete(institutions).run();
   db.delete(users).run();
   res.json({ message: 'Datos eliminados correctamente' });

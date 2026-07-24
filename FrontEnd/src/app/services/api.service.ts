@@ -67,4 +67,45 @@ export class ApiService {
     return this.request<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   }
   deleteAccount(id: number) { return this.request<{ message: string }>(`/accounts/${id}`, { method: 'DELETE' }); }
+  getBalance(id: number, from?: string, to?: string) {
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
+    const query = qs.toString();
+    return this.request<any>(`/accounts/${id}/balance${query ? '?' + query : ''}`);
+  }
+
+  // Categories
+  getCategories() { return this.request<Category[]>('/categories'); }
+
+  // Transactions
+  getTransactions(params?: { accountId?: number; categoryId?: number; from?: string; to?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.accountId) qs.set('account_id', String(params.accountId));
+    if (params?.categoryId) qs.set('category_id', String(params.categoryId));
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    const query = qs.toString();
+    return this.request<Transaction[]>(`/transactions${query ? '?' + query : ''}`);
+  }
+  createTransaction(data: { account_id: number; category_id: number; amount: number; date: string; description?: string; destination_account_id?: number }) {
+    return this.request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) });
+  }
+  deleteTransaction(id: number) { return this.request<{ message: string }>(`/transactions/${id}`, { method: 'DELETE' }); }
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+}
+
+export interface Transaction {
+  id: number;
+  accountId: number;
+  categoryId: number;
+  amount: number;
+  date: string;
+  description: string | null;
+  destinationAccountId: number | null;
 }
