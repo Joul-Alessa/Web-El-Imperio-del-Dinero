@@ -122,6 +122,19 @@ export class ApiService {
     const qs = userId ? '?user_id=' + userId : '';
     return this.request<any[]>(`/portfolio/summary${qs}`);
   }
+
+  // Analytics
+  getAnalytics(params?: { from?: string; to?: string; userId?: number; accountId?: number; accountType?: string; cumulative?: boolean }) {
+    const qs = new URLSearchParams();
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    if (params?.userId) qs.set('user_id', String(params.userId));
+    if (params?.accountId) qs.set('account_id', String(params.accountId));
+    if (params?.accountType) qs.set('account_type', params.accountType);
+    if (params?.cumulative) qs.set('cumulative', 'true');
+    const query = qs.toString();
+    return this.request<any>(`/analytics/summary${query ? '?' + query : ''}`);
+  }
 }
 
 export interface Category {
