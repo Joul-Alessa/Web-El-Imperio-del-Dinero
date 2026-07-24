@@ -1,0 +1,70 @@
+import { Injectable } from '@angular/core';
+import { Observable, from } from 'rxjs';
+
+export interface User {
+  id: number;
+  name: string;
+  createdAt: string;
+}
+
+export interface Institution {
+  id: number;
+  name: string;
+  icon: string | null;
+}
+
+export interface Account {
+  id: number;
+  userId: number;
+  institutionId: number;
+  name: string;
+  type: 'DEBIT' | 'CREDIT' | 'INVESTMENT' | 'CASH';
+  currency: string;
+  createdAt: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  private base = 'http://localhost:3000/api';
+
+  private request<T>(path: string, init?: RequestInit): Observable<T> {
+    return from(
+      fetch(`${this.base}${path}`, {
+        headers: { 'Content-Type': 'application/json' },
+        ...init,
+      }).then(async (res) => {
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(err || res.statusText);
+        }
+        return res.json() as T;
+      })
+    );
+  }
+
+  getUsers() { return this.request<User[]>('/users'); }
+  createUser(name: string) { return this.request<User>('/users', { method: 'POST', body: JSON.stringify({ name }) }); }
+  updateUser(id: number, name: string) { return this.request<User>(`/users/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }); }
+  deleteUser(id: number) { return this.request<{ message: string }>(`/users/${id}`, { method: 'DELETE' }); }
+
+  getInstitutions() { return this.request<Institution[]>('/institutions'); }
+  createInstitution(name: string, icon?: string) { return this.request<Institution>('/institutions', { method: 'POST', body: JSON.stringify({ name, icon }) }); }
+  updateInstitution(id: number, data: Partial<Institution>) { return this.request<Institution>(`/institutions/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  deleteInstitution(id: number) { return this.request<{ message: string }>(`/institutions/${id}`, { method: 'DELETE' }); }
+
+  getAccounts(params?: { userId?: number; institutionId?: number; type?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.userId) qs.set('user_id', String(params.userId));
+    if (params?.institutionId) qs.set('institution_id', String(params.institutionId));
+    if (params?.type) qs.set('type', params.type);
+    const query = qs.toString();
+    return this.request<Account[]>(`/accounts${query ? '?' + query : ''}`);
+  }
+  createAccount(data: { user_id: number; institution_id: number; name: string; type: string; currency?: string }) {
+    return this.request<Account>('/accounts', { method: 'POST', body: JSON.stringify(data) });
+  }
+  updateAccount(id: number, data: Partial<Account>) {
+    return this.request<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+  deleteAccount(id: number) { return this.request<{ message: string }>(`/accounts/${id}`, { method: 'DELETE' }); }
+}
