@@ -1,3 +1,5 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import { userRouter } from './controllers/users.js';
@@ -35,6 +37,14 @@ app.use('/api', tradeRouter);
 app.use('/api', portfolioRouter);
 app.use('/api', analyticsRouter);
 app.use('/api/seed', seedRouter);
+
+const staticDir = process.env.STATIC_DIR;
+if (staticDir) {
+  app.use(express.static(staticDir));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(staticDir, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
