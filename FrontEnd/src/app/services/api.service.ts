@@ -92,6 +92,36 @@ export class ApiService {
     return this.request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) });
   }
   deleteTransaction(id: number) { return this.request<{ message: string }>(`/transactions/${id}`, { method: 'DELETE' }); }
+
+  // Assets
+  getAssets() { return this.request<Asset[]>('/assets'); }
+  createAsset(data: { ticker: string; name: string; asset_type: string }) {
+    return this.request<Asset>('/assets', { method: 'POST', body: JSON.stringify(data) });
+  }
+  deleteAsset(id: number) { return this.request<{ message: string }>(`/assets/${id}`, { method: 'DELETE' }); }
+
+  // Trades
+  trade(data: { account_id: number; asset_id: number; transaction_type: string; quantity: number; price_per_unit: number; fee?: number; date: string }) {
+    return this.request<any>('/assets/trade', { method: 'POST', body: JSON.stringify(data) });
+  }
+  getTrades(accountId?: number) {
+    const qs = accountId ? '?account_id=' + accountId : '';
+    return this.request<any[]>(`/assets/trade${qs}`);
+  }
+
+  // Revaluation
+  revaluate(accountId: number, newBalance: number, notes?: string) {
+    return this.request<any>(`/accounts/${accountId}/revaluate`, { method: 'POST', body: JSON.stringify({ new_balance: newBalance, notes }) });
+  }
+  getRevaluations(accountId: number) {
+    return this.request<any[]>(`/accounts/${accountId}/revaluations`);
+  }
+
+  // Portfolio
+  getPortfolio(userId?: number) {
+    const qs = userId ? '?user_id=' + userId : '';
+    return this.request<any[]>(`/portfolio/summary${qs}`);
+  }
 }
 
 export interface Category {
@@ -108,4 +138,11 @@ export interface Transaction {
   date: string;
   description: string | null;
   destinationAccountId: number | null;
+}
+
+export interface Asset {
+  id: number;
+  ticker: string;
+  name: string;
+  assetType: string;
 }

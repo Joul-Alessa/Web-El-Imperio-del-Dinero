@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/connection.js';
-import { users, institutions, accounts, categories, transactions } from '../db/schema.js';
+import { users, institutions, accounts, categories, transactions, assetTransactions, assetHoldings, assets, accountRevaluations } from '../db/schema.js';
 
 export const seedRouter = Router();
 
@@ -35,12 +35,17 @@ seedRouter.post('/', (_req, res) => {
     { name: 'Salud', type: 'EXPENSE' },
     { name: 'Renta', type: 'EXPENSE' },
     { name: 'Transferencia', type: 'TRANSFER' },
+    { name: 'Rendimiento', type: 'INCOME' },
   ]).returning().all();
 
   res.status(201).json({ users: userData, institutions: institutionData, categories: categoryData });
 });
 
 seedRouter.delete('/', (_req, res) => {
+  db.delete(assetTransactions).run();
+  db.delete(assetHoldings).run();
+  db.delete(assets).run();
+  db.delete(accountRevaluations).run();
   db.delete(transactions).run();
   db.delete(accounts).run();
   db.delete(categories).run();

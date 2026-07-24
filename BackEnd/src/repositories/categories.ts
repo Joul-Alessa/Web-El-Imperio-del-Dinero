@@ -11,6 +11,10 @@ export const categoryRepository = {
     return db.select().from(categories).where(eq(categories.id, id)).get();
   },
 
+  findByName(name: string) {
+    return db.select().from(categories).where(eq(categories.name, name)).get();
+  },
+
   create(data: { name: string; type: string }) {
     return db.insert(categories).values(data as any).returning().get();
   },

@@ -37,3 +37,38 @@ export const transactions = sqliteTable('transactions', {
   description: text('description'),
   destinationAccountId: integer('destination_account_id').references(() => accounts.id),
 });
+
+export const assets = sqliteTable('assets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ticker: text('ticker').notNull().unique(),
+  name: text('name').notNull(),
+  assetType: text('asset_type', { enum: ['STOCK', 'ETF', 'BOND', 'CRYPTO'] }).notNull(),
+});
+
+export const assetHoldings = sqliteTable('asset_holdings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountId: integer('account_id').notNull().references(() => accounts.id),
+  assetId: integer('asset_id').notNull().references(() => assets.id),
+  quantity: real('quantity').notNull().default(0),
+  avgBuyPrice: real('avg_buy_price').notNull().default(0),
+});
+
+export const assetTransactions = sqliteTable('asset_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountId: integer('account_id').notNull().references(() => accounts.id),
+  assetId: integer('asset_id').notNull().references(() => assets.id),
+  transactionType: text('transaction_type', { enum: ['BUY', 'SELL'] }).notNull(),
+  quantity: real('quantity').notNull(),
+  pricePerUnit: real('price_per_unit').notNull(),
+  fee: real('fee').notNull().default(0),
+  date: text('date').notNull(),
+});
+
+export const accountRevaluations = sqliteTable('account_revaluations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountId: integer('account_id').notNull().references(() => accounts.id),
+  newBalance: real('new_balance').notNull(),
+  difference: real('difference').notNull(),
+  date: text('date').notNull(),
+  notes: text('notes'),
+});
