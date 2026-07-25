@@ -1,10 +1,75 @@
 @import '@angular/material/prebuilt-themes/azure-blue.css';
 
+:root,
+[data-theme='light'] {
+  --bg-body: #f0f7f0;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #e8f5e9;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-toolbar: #1b5e20;
+  --bg-sidebar: #f5faf5;
+  --bg-table-stripe: #f1f8e9;
+
+  --text-primary: #1b2b1b;
+  --text-secondary: #3c5a3c;
+  --text-on-toolbar: #ffffff;
+  --text-muted: #5a7a5a;
+
+  --border-color: #c8e6c9;
+  --border-input: #a5d6a7;
+
+  --positive: #1b5e20;
+  --positive-bg: #e8f5e9;
+  --negative: #b71c1c;
+  --negative-bg: #ffebee;
+
+  --accent: #2e7d32;
+  --accent-hover: #1b5e20;
+  --accent-light: #4caf50;
+
+  --shadow: 0 2px 8px rgba(0, 32, 0, 0.08);
+  --radius: 8px;
+}
+
+[data-theme='dark'] {
+  --bg-body: #0d1a0d;
+  --bg-surface: #1a2e1a;
+  --bg-surface-hover: #2a432a;
+  --bg-card: #1e3320;
+  --bg-input: #1a2e1a;
+  --bg-toolbar: #0d1a0d;
+  --bg-sidebar: #142214;
+  --bg-table-stripe: #1f361f;
+
+  --text-primary: #e0f2e0;
+  --text-secondary: #a5d6a7;
+  --text-on-toolbar: #e0f2e0;
+  --text-muted: #81c784;
+
+  --border-color: #2e4a2e;
+  --border-input: #3a5a3a;
+
+  --positive: #81c784;
+  --positive-bg: #1b3a1b;
+  --negative: #ef9a9a;
+  --negative-bg: #3a1b1b;
+
+  --accent: #66bb6a;
+  --accent-hover: #81c784;
+  --accent-light: #4caf50;
+
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
 }
 
 * { box-sizing: border-box; }
@@ -13,15 +78,101 @@ input, select, button, textarea {
   font-size: 16px;
 }
 
-table {
-  display: block;
-  overflow-x: auto;
-  white-space: nowrap;
+input, select, textarea {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 8px;
+  transition: border-color 0.2s;
 }
 
-@media (max-width: 768px) {
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  background: var(--accent);
+  color: var(--text-on-toolbar);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:hover { background: var(--accent-hover); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+th, td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+th {
+  background: var(--bg-surface-hover);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td { color: var(--text-primary); }
+
+tr:nth-child(even) td {
+  background: var(--bg-table-stripe);
+}
+
+.positive { color: var(--positive); font-weight: 700; }
+.negative { color: var(--negative); font-weight: 700; }
+
+details {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 599px) {
+  .content { padding: 12px !important; }
+  table { font-size: 0.85em; }
+  th, td { padding: 8px 6px; }
   .summary { flex-direction: column; }
+  .summary .card { min-width: auto; }
   .charts { flex-direction: column; }
-  .chart-box { min-height: 250px; }
-  mat-drawer { width: 200px !important; }
+  .chart-box { min-height: 220px; }
+  .filters { flex-direction: column; }
+  .filters > * { width: 100%; }
+  .form-row { flex-direction: column; }
+  .form-row > * { width: 100%; }
+  h2 { font-size: 1.3em; }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .content { padding: 16px !important; }
+  .summary { flex-wrap: wrap; }
+  .summary .card { flex: 1 1 45%; }
+  .charts { flex-direction: column; }
+  .form-row { flex-wrap: wrap; }
 }

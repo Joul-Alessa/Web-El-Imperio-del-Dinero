@@ -72,10 +72,9 @@ import { ApiService, Account, User, Asset } from '../../services/api.service';
     </table>
   `,
   styles: [`
-    .form-card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    .form-card { border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius); margin-bottom: 16px; background: var(--bg-surface); }
     .form-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-color); }
     details { margin-bottom: 16px; }
     summary { cursor: pointer; margin-bottom: 8px; font-weight: bold; }
     h3 { margin-top: 24px; }

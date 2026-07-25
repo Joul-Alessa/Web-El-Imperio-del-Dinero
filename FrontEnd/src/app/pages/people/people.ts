@@ -44,9 +44,7 @@ import { ApiService, User } from '../../services/api.service';
   `,
   styles: [`
     .form-row { display: flex; gap: 8px; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
-    button { margin-left: 4px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-color); }
   `]
 })
 export class PeopleComponent implements OnInit {

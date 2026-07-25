@@ -1,34 +1,38 @@
-<mat-toolbar color="primary">
-  <button mat-icon-button (click)="drawer.toggle()">
+<mat-toolbar>
+  <button mat-icon-button (click)="drawer.toggle()" class="menu-btn">
     <mat-icon>menu</mat-icon>
   </button>
-  <span>El Imperio del Dinero</span>
+  <span class="title">El Imperio del Dinero</span>
+  <span class="toolbar-spacer"></span>
+  <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="isDark() ? 'Modo claro' : 'Modo oscuro'">
+    <mat-icon>{{ isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+  </button>
 </mat-toolbar>
 
 <mat-drawer-container>
-  <mat-drawer #drawer mode="side" opened>
+  <mat-drawer #drawer [mode]="isDesktop() ? 'side' : 'over'" [opened]="drawerOpened" (closed)="drawerOpened = false">
     <mat-nav-list>
-      <a mat-list-item routerLink="/dashboard" routerLinkActive="active-link">
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="active-link" (click)="closeDrawerOnMobile()">
         <mat-icon matListItemIcon>dashboard</mat-icon>
         Dashboard
       </a>
-      <a mat-list-item routerLink="/personas" routerLinkActive="active-link">
+      <a mat-list-item routerLink="/personas" routerLinkActive="active-link" (click)="closeDrawerOnMobile()">
         <mat-icon matListItemIcon>people</mat-icon>
         Personas
       </a>
-      <a mat-list-item routerLink="/instituciones" routerLinkActive="active-link">
+      <a mat-list-item routerLink="/instituciones" routerLinkActive="active-link" (click)="closeDrawerOnMobile()">
         <mat-icon matListItemIcon>business</mat-icon>
         Instituciones
       </a>
-      <a mat-list-item routerLink="/cuentas" routerLinkActive="active-link">
+      <a mat-list-item routerLink="/cuentas" routerLinkActive="active-link" (click)="closeDrawerOnMobile()">
         <mat-icon matListItemIcon>account_balance</mat-icon>
         Cuentas
       </a>
-      <a mat-list-item routerLink="/transacciones" routerLinkActive="active-link">
+      <a mat-list-item routerLink="/transacciones" routerLinkActive="active-link" (click)="closeDrawerOnMobile()">
         <mat-icon matListItemIcon>receipt</mat-icon>
         Transacciones
       </a>
-      <a mat-list-item routerLink="/inversiones" routerLinkActive="active-link">
+      <a mat-list-item routerLink="/inversiones" routerLinkActive="active-link" (click)="closeDrawerOnMobile()">
         <mat-icon matListItemIcon>trending_up</mat-icon>
         Inversiones
       </a>

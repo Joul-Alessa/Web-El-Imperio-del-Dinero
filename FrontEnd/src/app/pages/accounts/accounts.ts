@@ -83,7 +83,7 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
   styles: [`
     .filters, .form-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-color); }
     details { margin-bottom: 16px; }
     summary { cursor: pointer; margin-bottom: 8px; font-weight: bold; }
   `]

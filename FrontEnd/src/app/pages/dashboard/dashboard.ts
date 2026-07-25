@@ -63,12 +63,10 @@ Chart.register(
     .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
     .filters label { display: flex; align-items: center; gap: 4px; }
     .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-    .card { flex: 1; min-width: 120px; background: #f5f5f5; border-radius: 8px; padding: 16px; text-align: center; font-weight: 500; }
+    .card { flex: 1; min-width: 120px; background: var(--bg-surface-hover); border-radius: var(--radius); padding: 16px; text-align: center; font-weight: 500; box-shadow: var(--shadow); }
     .card span { font-size: 1.4em; font-weight: 700; display: block; margin-top: 4px; }
-    .positive { color: #2e7d32; }
-    .negative { color: #c62828; }
     .charts { display: flex; gap: 16px; margin-bottom: 16px; }
-    .chart-box { flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+    .chart-box { flex: 1; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
     .chart-box.full { width: 100%; }
     .chart-box canvas { max-height: 300px; max-width: 100%; }
     h3 { margin: 0 0 12px 0; font-size: 1rem; }
