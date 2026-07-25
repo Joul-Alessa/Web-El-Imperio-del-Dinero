@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 export interface User {
   id: number;
@@ -27,30 +27,17 @@ export interface Account {
 export class ApiService {
   private base = 'http://localhost:3000/api';
 
-  private request<T>(path: string, init?: RequestInit): Observable<T> {
-    return from(
-      fetch(`${this.base}${path}`, {
-        headers: { 'Content-Type': 'application/json' },
-        ...init,
-      }).then(async (res) => {
-        if (!res.ok) {
-          const err = await res.text();
-          throw new Error(err || res.statusText);
-        }
-        return res.json() as T;
-      })
-    );
-  }
+  constructor(private http: HttpClient) {}
 
-  getUsers() { return this.request<User[]>('/users'); }
-  createUser(name: string) { return this.request<User>('/users', { method: 'POST', body: JSON.stringify({ name }) }); }
-  updateUser(id: number, name: string) { return this.request<User>(`/users/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }); }
-  deleteUser(id: number) { return this.request<{ message: string }>(`/users/${id}`, { method: 'DELETE' }); }
+  getUsers() { return this.http.get<User[]>(`${this.base}/users`); }
+  createUser(name: string) { return this.http.post<User>(`${this.base}/users`, { name }); }
+  updateUser(id: number, name: string) { return this.http.put<User>(`${this.base}/users/${id}`, { name }); }
+  deleteUser(id: number) { return this.http.delete<{ message: string }>(`${this.base}/users/${id}`); }
 
-  getInstitutions() { return this.request<Institution[]>('/institutions'); }
-  createInstitution(name: string, icon?: string) { return this.request<Institution>('/institutions', { method: 'POST', body: JSON.stringify({ name, icon }) }); }
-  updateInstitution(id: number, data: Partial<Institution>) { return this.request<Institution>(`/institutions/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
-  deleteInstitution(id: number) { return this.request<{ message: string }>(`/institutions/${id}`, { method: 'DELETE' }); }
+  getInstitutions() { return this.http.get<Institution[]>(`${this.base}/institutions`); }
+  createInstitution(name: string, icon?: string) { return this.http.post<Institution>(`${this.base}/institutions`, { name, icon }); }
+  updateInstitution(id: number, data: Partial<Institution>) { return this.http.put<Institution>(`${this.base}/institutions/${id}`, data); }
+  deleteInstitution(id: number) { return this.http.delete<{ message: string }>(`${this.base}/institutions/${id}`); }
 
   getAccounts(params?: { userId?: number; institutionId?: number; type?: string }) {
     const qs = new URLSearchParams();
@@ -58,27 +45,25 @@ export class ApiService {
     if (params?.institutionId) qs.set('institution_id', String(params.institutionId));
     if (params?.type) qs.set('type', params.type);
     const query = qs.toString();
-    return this.request<Account[]>(`/accounts${query ? '?' + query : ''}`);
+    return this.http.get<Account[]>(`${this.base}/accounts${query ? '?' + query : ''}`);
   }
   createAccount(data: { user_id: number; institution_id: number; name: string; type: string; currency?: string }) {
-    return this.request<Account>('/accounts', { method: 'POST', body: JSON.stringify(data) });
+    return this.http.post<Account>(`${this.base}/accounts`, data);
   }
   updateAccount(id: number, data: Partial<Account>) {
-    return this.request<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    return this.http.put<Account>(`${this.base}/accounts/${id}`, data);
   }
-  deleteAccount(id: number) { return this.request<{ message: string }>(`/accounts/${id}`, { method: 'DELETE' }); }
+  deleteAccount(id: number) { return this.http.delete<{ message: string }>(`${this.base}/accounts/${id}`); }
   getBalance(id: number, from?: string, to?: string) {
     const qs = new URLSearchParams();
     if (from) qs.set('from', from);
     if (to) qs.set('to', to);
     const query = qs.toString();
-    return this.request<any>(`/accounts/${id}/balance${query ? '?' + query : ''}`);
+    return this.http.get<any>(`${this.base}/accounts/${id}/balance${query ? '?' + query : ''}`);
   }
 
-  // Categories
-  getCategories() { return this.request<Category[]>('/categories'); }
+  getCategories() { return this.http.get<Category[]>(`${this.base}/categories`); }
 
-  // Transactions
   getTransactions(params?: { accountId?: number; categoryId?: number; from?: string; to?: string }) {
     const qs = new URLSearchParams();
     if (params?.accountId) qs.set('account_id', String(params.accountId));
@@ -86,44 +71,39 @@ export class ApiService {
     if (params?.from) qs.set('from', params.from);
     if (params?.to) qs.set('to', params.to);
     const query = qs.toString();
-    return this.request<Transaction[]>(`/transactions${query ? '?' + query : ''}`);
+    return this.http.get<Transaction[]>(`${this.base}/transactions${query ? '?' + query : ''}`);
   }
   createTransaction(data: { account_id: number; category_id: number; amount: number; date: string; description?: string; destination_account_id?: number }) {
-    return this.request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) });
+    return this.http.post<Transaction>(`${this.base}/transactions`, data);
   }
-  deleteTransaction(id: number) { return this.request<{ message: string }>(`/transactions/${id}`, { method: 'DELETE' }); }
+  deleteTransaction(id: number) { return this.http.delete<{ message: string }>(`${this.base}/transactions/${id}`); }
 
-  // Assets
-  getAssets() { return this.request<Asset[]>('/assets'); }
+  getAssets() { return this.http.get<Asset[]>(`${this.base}/assets`); }
   createAsset(data: { ticker: string; name: string; asset_type: string }) {
-    return this.request<Asset>('/assets', { method: 'POST', body: JSON.stringify(data) });
+    return this.http.post<Asset>(`${this.base}/assets`, data);
   }
-  deleteAsset(id: number) { return this.request<{ message: string }>(`/assets/${id}`, { method: 'DELETE' }); }
+  deleteAsset(id: number) { return this.http.delete<{ message: string }>(`${this.base}/assets/${id}`); }
 
-  // Trades
   trade(data: { account_id: number; asset_id: number; transaction_type: string; quantity: number; price_per_unit: number; fee?: number; date: string }) {
-    return this.request<any>('/assets/trade', { method: 'POST', body: JSON.stringify(data) });
+    return this.http.post<any>(`${this.base}/assets/trade`, data);
   }
   getTrades(accountId?: number) {
     const qs = accountId ? '?account_id=' + accountId : '';
-    return this.request<any[]>(`/assets/trade${qs}`);
+    return this.http.get<any[]>(`${this.base}/assets/trade${qs}`);
   }
 
-  // Revaluation
   revaluate(accountId: number, newBalance: number, notes?: string) {
-    return this.request<any>(`/accounts/${accountId}/revaluate`, { method: 'POST', body: JSON.stringify({ new_balance: newBalance, notes }) });
+    return this.http.post<any>(`${this.base}/accounts/${accountId}/revaluate`, { new_balance: newBalance, notes });
   }
   getRevaluations(accountId: number) {
-    return this.request<any[]>(`/accounts/${accountId}/revaluations`);
+    return this.http.get<any[]>(`${this.base}/accounts/${accountId}/revaluations`);
   }
 
-  // Portfolio
   getPortfolio(userId?: number) {
     const qs = userId ? '?user_id=' + userId : '';
-    return this.request<any[]>(`/portfolio/summary${qs}`);
+    return this.http.get<any[]>(`${this.base}/portfolio/summary${qs}`);
   }
 
-  // Analytics
   getAnalytics(params?: { from?: string; to?: string; userId?: number; accountId?: number; accountType?: string; cumulative?: boolean }) {
     const qs = new URLSearchParams();
     if (params?.from) qs.set('from', params.from);
@@ -133,7 +113,7 @@ export class ApiService {
     if (params?.accountType) qs.set('account_type', params.accountType);
     if (params?.cumulative) qs.set('cumulative', 'true');
     const query = qs.toString();
-    return this.request<any>(`/analytics/summary${query ? '?' + query : ''}`);
+    return this.http.get<any>(`${this.base}/analytics/summary${query ? '?' + query : ''}`);
   }
 }
 
