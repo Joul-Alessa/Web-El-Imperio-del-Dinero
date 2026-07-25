@@ -1,27 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Asset } from '../../services/api.service';
 
 @Component({
   selector: 'app-investments',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <h2>Inversiones y Rendimientos</h2>
 
     <details>
       <summary>Nuevo activo</summary>
       <div class="form-row">
-        <input [(ngModel)]="assetForm.ticker" placeholder="Ticker (ej. NVDA)" />
-        <input [(ngModel)]="assetForm.name" placeholder="Nombre" />
-        <select [(ngModel)]="assetForm.assetType">
+        <input #assetTicker placeholder="Ticker (ej. NVDA)" />
+        <input #assetName placeholder="Nombre" />
+        <select #assetType>
           <option value="STOCK">Acción</option>
           <option value="ETF">ETF</option>
           <option value="BOND">Bono</option>
           <option value="CRYPTO">Crypto</option>
         </select>
-        <button (click)="addAsset()">Crear activo</button>
+        <button (click)="addAsset(assetTicker.value, assetName.value, assetType.value); assetTicker.value = ''; assetName.value = ''">Crear activo</button>
       </div>
     </details>
 
@@ -29,27 +28,27 @@ import { ApiService, Account, User, Asset } from '../../services/api.service';
       <summary>Registrar trade</summary>
       <div class="form-card">
         <div class="form-row">
-          <select [(ngModel)]="tradeForm.accountId"><option value="">Cuenta</option>@for (a of investAccounts; track a.id){<option [value]="a.id">{{a.name}}</option>}</select>
-          <select [(ngModel)]="tradeForm.assetId"><option value="">Activo</option>@for (a of assets; track a.id){<option [value]="a.id">{{a.ticker}} - {{a.name}}</option>}</select>
-          <select [(ngModel)]="tradeForm.transactionType"><option value="BUY">Compra</option><option value="SELL">Venta</option></select>
+          <select #tradeAccount><option value="">Cuenta</option>@for (a of investAccounts; track a.id){<option [value]="a.id">{{a.name}}</option>}</select>
+          <select #tradeAsset><option value="">Activo</option>@for (a of assets; track a.id){<option [value]="a.id">{{a.ticker}} - {{a.name}}</option>}</select>
+          <select #tradeType><option value="BUY">Compra</option><option value="SELL">Venta</option></select>
         </div>
         <div class="form-row">
-          <input type="number" [(ngModel)]="tradeForm.quantity" placeholder="Cantidad" />
-          <input type="number" [(ngModel)]="tradeForm.pricePerUnit" placeholder="Precio unitario" />
-          <input type="number" [(ngModel)]="tradeForm.fee" placeholder="Comisión" />
-          <input type="date" [(ngModel)]="tradeForm.date" />
+          <input type="number" #tradeQuantity placeholder="Cantidad" />
+          <input type="number" #tradePrice placeholder="Precio unitario" />
+          <input type="number" #tradeFee placeholder="Comisión" />
+          <input type="date" #tradeDate [value]="today" />
         </div>
-        <button (click)="doTrade()">Ejecutar</button>
+        <button (click)="doTrade(tradeAccount.value, tradeAsset.value, tradeType.value, tradeQuantity.value, tradePrice.value, tradeFee.value, tradeDate.value)">Ejecutar</button>
       </div>
     </details>
 
     <details>
       <summary>Revaluar cuenta</summary>
       <div class="form-row">
-        <select [(ngModel)]="revAccountId"><option value="">Cuenta</option>@for (a of accounts; track a.id){<option [value]="a.id">{{a.name}}</option>}</select>
-        <input type="number" [(ngModel)]="revNewBalance" placeholder="Nuevo saldo" />
-        <input [(ngModel)]="revNotes" placeholder="Nota (opcional)" />
-        <button (click)="doRevaluate()">Revaluar</button>
+        <select #revAccount><option value="">Cuenta</option>@for (a of accounts; track a.id){<option [value]="a.id">{{a.name}}</option>}</select>
+        <input type="number" #revNewBalance placeholder="Nuevo saldo" />
+        <input #revNotes placeholder="Nota (opcional)" />
+        <button (click)="doRevaluate(revAccount.value, revNewBalance.value, revNotes.value)">Revaluar</button>
       </div>
     </details>
 
@@ -87,12 +86,6 @@ export class InvestmentsComponent implements OnInit {
   portfolio: any[] = [];
   investAccounts: Account[] = [];
 
-  assetForm: any = { ticker: '', name: '', assetType: 'STOCK' };
-  tradeForm: any = { transactionType: 'BUY', fee: 0, date: new Date().toISOString().slice(0, 10), quantity: 0, pricePerUnit: 0 };
-  revAccountId = '';
-  revNewBalance = 0;
-  revNotes = '';
-
   constructor(private api: ApiService) {}
 
   ngOnInit() {
@@ -105,45 +98,37 @@ export class InvestmentsComponent implements OnInit {
     this.loadPortfolio();
   }
 
+  get today() { return new Date().toISOString().slice(0, 10); }
+
   loadPortfolio() { this.api.getPortfolio().subscribe(p => this.portfolio = p); }
 
-  addAsset() {
-    if (!this.assetForm.ticker.trim()) return;
+  addAsset(ticker: string, name: string, assetType: string) {
+    if (!ticker.trim()) return;
     this.api.createAsset({
-      ticker: this.assetForm.ticker.trim().toUpperCase(),
-      name: this.assetForm.name.trim(),
-      asset_type: this.assetForm.assetType,
+      ticker: ticker.trim().toUpperCase(),
+      name: name.trim(),
+      asset_type: assetType,
     }).subscribe(() => {
-      this.assetForm.ticker = '';
-      this.assetForm.name = '';
       this.api.getAssets().subscribe(a => this.assets = a);
     });
   }
 
-  doTrade() {
-    if (!this.tradeForm.accountId || !this.tradeForm.assetId) return;
+  doTrade(accountId: string, assetId: string, transactionType: string, quantity: string, pricePerUnit: string, fee: string, date: string) {
+    if (!accountId || !assetId) return;
     this.api.trade({
-      account_id: Number(this.tradeForm.accountId),
-      asset_id: Number(this.tradeForm.assetId),
-      transaction_type: this.tradeForm.transactionType,
-      quantity: Number(this.tradeForm.quantity),
-      price_per_unit: Number(this.tradeForm.pricePerUnit),
-      fee: Number(this.tradeForm.fee || 0),
-      date: this.tradeForm.date,
-    }).subscribe(() => {
-      this.tradeForm.quantity = 0;
-      this.tradeForm.pricePerUnit = 0;
-      this.tradeForm.fee = 0;
-      this.loadPortfolio();
-    });
+      account_id: Number(accountId),
+      asset_id: Number(assetId),
+      transaction_type: transactionType,
+      quantity: Number(quantity),
+      price_per_unit: Number(pricePerUnit),
+      fee: Number(fee || 0),
+      date,
+    }).subscribe(() => this.loadPortfolio());
   }
 
-  doRevaluate() {
-    if (!this.revAccountId) return;
-    this.api.revaluate(Number(this.revAccountId), Number(this.revNewBalance), this.revNotes || undefined)
-      .subscribe(() => {
-        this.revNewBalance = 0;
-        this.revNotes = '';
-      });
+  doRevaluate(accountId: string, newBalance: string, notes: string) {
+    if (!accountId) return;
+    this.api.revaluate(Number(accountId), Number(newBalance), notes || undefined)
+      .subscribe(() => {});
   }
 }

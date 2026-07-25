@@ -1,19 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService, Institution } from '../../services/api.service';
 
 @Component({
   selector: 'app-institutions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <h2>Instituciones</h2>
 
     <div class="form-row">
-      <input [(ngModel)]="newName" placeholder="Nombre" />
-      <input [(ngModel)]="newIcon" placeholder="Icono (opcional)" />
-      <button (click)="add()">Añadir</button>
+      <input #nameInput placeholder="Nombre" />
+      <input #iconInput placeholder="Icono (opcional)" />
+      <button (click)="add(nameInput.value, iconInput.value); nameInput.value = ''; iconInput.value = ''">Añadir</button>
     </div>
 
     <table>
@@ -26,7 +25,7 @@ import { ApiService, Institution } from '../../services/api.service';
             <td>{{ item.id }}</td>
             <td>
               @if (editingId === item.id) {
-                <input [(ngModel)]="editName" (keyup.enter)="save(item.id)" />
+                <input #editInput [value]="item.name" (keyup.enter)="save(item.id, editInput.value)" />
               } @else {
                 {{ item.name }}
               }
@@ -48,10 +47,7 @@ import { ApiService, Institution } from '../../services/api.service';
 })
 export class InstitutionsComponent implements OnInit {
   list: Institution[] = [];
-  newName = '';
-  newIcon = '';
   editingId: number | null = null;
-  editName = '';
 
   constructor(private api: ApiService) {}
 
@@ -59,23 +55,22 @@ export class InstitutionsComponent implements OnInit {
 
   private load() { this.api.getInstitutions().subscribe(i => this.list = i); }
 
-  add() {
-    if (!this.newName.trim()) return;
-    this.api.createInstitution(this.newName.trim(), this.newIcon.trim() || undefined).subscribe(() => {
-      this.newName = '';
-      this.newIcon = '';
-      this.load();
-    });
+  add(name: string, icon: string) {
+    if (!name.trim()) return;
+    this.api.createInstitution(name.trim(), icon.trim() || undefined).subscribe(() => this.load());
   }
 
-  startEdit(item: Institution) { this.editingId = item.id; this.editName = item.name; }
+  startEdit(item: Institution) { this.editingId = item.id; }
 
-  save(id: number) {
-    this.api.updateInstitution(id, { name: this.editName.trim() }).subscribe(() => {
+  save(id: number, name: string) {
+    if (!name.trim()) return;
+    this.api.updateInstitution(id, { name: name.trim() }).subscribe(() => {
       this.editingId = null;
       this.load();
     });
   }
+
+  cancelEdit() { this.editingId = null; }
 
   remove(id: number) {
     if (confirm('¿Eliminar esta institución?')) {

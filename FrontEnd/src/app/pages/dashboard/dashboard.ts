@@ -1,6 +1,5 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User } from '../../services/api.service';
 import {
   Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend,
@@ -15,25 +14,25 @@ Chart.register(
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <h2>Dashboard</h2>
 
     <div class="filters">
-      <select [(ngModel)]="filterUserId" (change)="load()">
+      <select (change)="filterUserId = $any($event.target).value; load()">
         <option value="">Todas las personas</option>
         @for (u of users; track u.id) { <option [value]="u.id">{{ u.name }}</option> }
       </select>
-      <select [(ngModel)]="filterAccountType" (change)="load()">
+      <select (change)="filterAccountType = $any($event.target).value; load()">
         <option value="">Todos los tipos</option>
         <option value="DEBIT">Débito</option>
         <option value="CREDIT">Crédito</option>
         <option value="INVESTMENT">Inversión</option>
         <option value="CASH">Efectivo</option>
       </select>
-      <input type="date" [(ngModel)]="filterFrom" (change)="load()" />
-      <input type="date" [(ngModel)]="filterTo" (change)="load()" />
-      <label><input type="checkbox" [(ngModel)]="cumulative" (change)="load()" /> Incluir historial pasado</label>
+      <input type="date" (change)="filterFrom = $any($event.target).value; load()" />
+      <input type="date" (change)="filterTo = $any($event.target).value; load()" />
+      <label><input type="checkbox" (change)="cumulative = $event.target.checked; load()" /> Incluir historial pasado</label>
     </div>
 
     <div class="summary">

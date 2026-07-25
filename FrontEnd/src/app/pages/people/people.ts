@@ -1,18 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService, User } from '../../services/api.service';
 
 @Component({
   selector: 'app-people',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <h2>Personas</h2>
 
     <div class="form-row">
-      <input [(ngModel)]="newName" placeholder="Nombre de la persona" />
-      <button (click)="addUser()">Añadir</button>
+      <input #nameInput placeholder="Nombre de la persona" />
+      <button (click)="addUser(nameInput.value); nameInput.value = ''">Añadir</button>
     </div>
 
     <table>
@@ -25,8 +24,8 @@ import { ApiService, User } from '../../services/api.service';
             <td>{{ u.id }}</td>
             <td>
               @if (editingId === u.id) {
-                <input [(ngModel)]="editName" (keyup.enter)="saveUser(u.id)" />
-                <button (click)="saveUser(u.id)">Guardar</button>
+                <input #editInput [value]="u.name" (keyup.enter)="saveUser(u.id, editInput.value)" />
+                <button (click)="saveUser(u.id, editInput.value)">Guardar</button>
                 <button (click)="cancelEdit()">Cancelar</button>
               } @else {
                 {{ u.name }}
@@ -49,9 +48,7 @@ import { ApiService, User } from '../../services/api.service';
 })
 export class PeopleComponent implements OnInit {
   users: User[] = [];
-  newName = '';
   editingId: number | null = null;
-  editName = '';
 
   constructor(private api: ApiService) {}
 
@@ -59,21 +56,16 @@ export class PeopleComponent implements OnInit {
 
   private load() { this.api.getUsers().subscribe(u => this.users = u); }
 
-  addUser() {
-    if (!this.newName.trim()) return;
-    this.api.createUser(this.newName.trim()).subscribe(() => {
-      this.newName = '';
-      this.load();
-    });
+  addUser(name: string) {
+    if (!name.trim()) return;
+    this.api.createUser(name.trim()).subscribe(() => this.load());
   }
 
-  startEdit(u: User) {
-    this.editingId = u.id;
-    this.editName = u.name;
-  }
+  startEdit(u: User) { this.editingId = u.id; }
 
-  saveUser(id: number) {
-    this.api.updateUser(id, this.editName.trim()).subscribe(() => {
+  saveUser(id: number, name: string) {
+    if (!name.trim()) return;
+    this.api.updateUser(id, name.trim()).subscribe(() => {
       this.editingId = null;
       this.load();
     });

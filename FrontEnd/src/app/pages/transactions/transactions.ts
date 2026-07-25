@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Category, Transaction } from '../../services/api.service';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <h2>Transacciones</h2>
 
@@ -14,54 +13,54 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
       <summary>Nueva transacción</summary>
       <div class="form-card">
         <div class="form-row">
-          <select [(ngModel)]="form.accountId">
+          <select #formAccountSelect>
             <option value="">Cuenta origen</option>
             @for (a of accounts; track a.id) {
               <option [value]="a.id">{{ accountLabel(a) }}</option>
             }
           </select>
-          <select [(ngModel)]="form.type" (change)="onTypeChange()">
+          <select #formTypeSelect (change)="formType = formTypeSelect.value">
             <option value="INCOME">Ingreso</option>
-            <option value="EXPENSE">Gasto</option>
+            <option value="EXPENSE" selected>Gasto</option>
             <option value="TRANSFER">Transferencia</option>
           </select>
-          <select [(ngModel)]="form.categoryId">
+          <select #formCategorySelect>
             <option value="">Categoría</option>
-            @for (c of filteredCategories; track c.id) {
+            @for (c of filteredCategories(formType); track c.id) {
               <option [value]="c.id">{{ c.name }}</option>
             }
           </select>
         </div>
         <div class="form-row">
-          <input type="number" [(ngModel)]="form.amount" placeholder="Monto" />
-          <input type="date" [(ngModel)]="form.date" />
-          <input [(ngModel)]="form.description" placeholder="Descripción (opcional)" />
+          <input type="number" #formAmount placeholder="Monto" />
+          <input type="date" #formDate [value]="today" />
+          <input #formDesc placeholder="Descripción (opcional)" />
         </div>
-        @if (form.type === 'TRANSFER') {
+        @if (formType === 'TRANSFER') {
           <div class="form-row">
-            <select [(ngModel)]="form.destinationAccountId">
+            <select (change)="transferDest = $any($event.target).value">
               <option value="">Cuenta destino</option>
               @for (a of accounts; track a.id) {
-                @if (a.id !== form.accountId) {
+                @if (a.id !== (+formAccountSelect.value)) {
                   <option [value]="a.id">{{ accountLabel(a) }}</option>
                 }
               }
             </select>
           </div>
         }
-        <button (click)="addTransaction()">Guardar</button>
+        <button (click)="addTransaction(formAccountSelect.value, formTypeSelect.value, formCategorySelect.value, formAmount.value, formDate.value, formDesc.value)">Guardar</button>
       </div>
     </details>
 
     <div class="filters">
-      <select [(ngModel)]="filterAccountId" (change)="load()">
+      <select (change)="filterAccountId = $any($event.target).value; load()">
         <option value="">Todas las cuentas</option>
         @for (a of accounts; track a.id) {
           <option [value]="a.id">{{ accountLabel(a) }}</option>
         }
       </select>
-      <input type="date" [(ngModel)]="filterFrom" (change)="load()" placeholder="Desde" />
-      <input type="date" [(ngModel)]="filterTo" (change)="load()" placeholder="Hasta" />
+      <input type="date" (change)="filterFrom = $any($event.target).value; load()" placeholder="Desde" />
+      <input type="date" (change)="filterTo = $any($event.target).value; load()" placeholder="Hasta" />
     </div>
 
     <table>
@@ -104,7 +103,8 @@ export class TransactionsComponent implements OnInit {
   filterFrom = '';
   filterTo = '';
 
-  form: any = { type: 'EXPENSE', date: new Date().toISOString().slice(0, 10), amount: 0 };
+  formType = 'EXPENSE';
+  transferDest = '';
 
   constructor(private api: ApiService) {}
 
@@ -115,8 +115,10 @@ export class TransactionsComponent implements OnInit {
     this.load();
   }
 
-  get filteredCategories() {
-    return this.categories.filter(c => c.type === this.form.type);
+  get today() { return new Date().toISOString().slice(0, 10); }
+
+  filteredCategories(type: string) {
+    return this.categories.filter(c => c.type === type);
   }
 
   accountLabel(a: Account) {
@@ -128,8 +130,6 @@ export class TransactionsComponent implements OnInit {
     return this.categories.find(c => c.id === id)?.name ?? id;
   }
 
-  onTypeChange() { this.form.categoryId = ''; }
-
   load() {
     this.api.getTransactions({
       accountId: this.filterAccountId ? Number(this.filterAccountId) : undefined,
@@ -138,22 +138,19 @@ export class TransactionsComponent implements OnInit {
     }).subscribe(t => this.transactions = t);
   }
 
-  addTransaction() {
-    const amount = this.form.type === 'EXPENSE' || this.form.type === 'TRANSFER'
-      ? -Math.abs(Number(this.form.amount))
-      : Math.abs(Number(this.form.amount));
+  addTransaction(accountId: string, type: string, categoryId: string, amount: string, date: string, description: string) {
+    const numericAmount = type === 'EXPENSE' || type === 'TRANSFER'
+      ? -Math.abs(Number(amount))
+      : Math.abs(Number(amount));
 
     this.api.createTransaction({
-      account_id: Number(this.form.accountId),
-      category_id: Number(this.form.categoryId),
-      amount,
-      date: this.form.date,
-      description: this.form.description || undefined,
-      destination_account_id: this.form.type === 'TRANSFER' ? Number(this.form.destinationAccountId) : undefined,
+      account_id: Number(accountId),
+      category_id: Number(categoryId),
+      amount: numericAmount,
+      date,
+      description: description || undefined,
+      destination_account_id: type === 'TRANSFER' ? Number(this.transferDest) || undefined : undefined,
     }).subscribe(() => {
-      this.form.amount = 0;
-      this.form.description = '';
-      this.form.destinationAccountId = '';
       this.load();
     });
   }
