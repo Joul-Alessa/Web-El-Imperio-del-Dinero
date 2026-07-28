@@ -32,7 +32,7 @@ Chart.register(
       </select>
       <input type="date" (change)="filterFrom = $any($event.target).value; load()" />
       <input type="date" (change)="filterTo = $any($event.target).value; load()" />
-      <label><input type="checkbox" (change)="cumulative = $event.target.checked; load()" /> Incluir historial pasado</label>
+      <label><input type="checkbox" (change)="cumulative = $any($event.target).checked; load()" /> Incluir historial pasado</label>
     </div>
 
     <div class="summary">
@@ -96,7 +96,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   constructor(private api: ApiService) {}
 
   ngOnInit() {
-    this.api.getUsers().subscribe(u => this.users = u);
+    this.api.getUsers().subscribe({ next: u => this.users = u, error: e => console.error('Error al cargar personas', e) });
     this.load();
   }
 
@@ -111,11 +111,14 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       userId: this.filterUserId ? Number(this.filterUserId) : undefined,
       accountType: this.filterAccountType || undefined,
       cumulative: this.cumulative,
-    }).subscribe(data => {
-      this.summary = data.summary;
-      this.topCategories = data.topCategories ?? [];
-      this.monthlyTrend = data.monthlyTrend ?? [];
-      this.renderCharts();
+    }).subscribe({
+      next: data => {
+        this.summary = data.summary;
+        this.topCategories = data.topCategories ?? [];
+        this.monthlyTrend = data.monthlyTrend ?? [];
+        this.renderCharts();
+      },
+      error: e => console.error('Error al cargar analytics', e),
     });
   }
 

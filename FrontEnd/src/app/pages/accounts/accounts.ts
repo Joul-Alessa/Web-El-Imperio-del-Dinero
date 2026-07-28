@@ -1,22 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Institution } from '../../services/api.service';
 
 @Component({
   selector: 'app-accounts',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <h2>Cuentas</h2>
 
     <div class="filters">
-      <select (change)="filterUserId = $any($event.target).value; load()">
+      <select [(ngModel)]="filterUserId" (ngModelChange)="load()">
         <option value="">Todas las personas</option>
         @for (u of users; track u.id) {
           <option [value]="u.id">{{ u.name }}</option>
         }
       </select>
-      <select (change)="filterType = $any($event.target).value; load()">
+      <select [(ngModel)]="filterType" (ngModelChange)="load()">
         <option value="">Todos los tipos</option>
         <option value="DEBIT">Débito</option>
         <option value="CREDIT">Crédito</option>
@@ -28,26 +29,26 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
     <details>
       <summary>Nueva cuenta</summary>
       <div class="form-row">
-        <select #formUserId>
+        <select [(ngModel)]="form.userId">
           <option value="">Persona</option>
           @for (u of users; track u.id) {
             <option [value]="u.id">{{ u.name }}</option>
           }
         </select>
-        <select #formInstitutionId>
+        <select [(ngModel)]="form.institutionId">
           <option value="">Institución</option>
           @for (inst of institutions; track inst.id) {
             <option [value]="inst.id">{{ inst.name }}</option>
           }
         </select>
-        <input #formName placeholder="Nombre de la cuenta" />
-        <select #formType>
+        <input [(ngModel)]="form.name" placeholder="Nombre de la cuenta" (keyup.enter)="add()" />
+        <select [(ngModel)]="form.type">
           <option value="DEBIT">Débito</option>
           <option value="CREDIT">Crédito</option>
           <option value="INVESTMENT">Inversión</option>
           <option value="CASH">Efectivo</option>
         </select>
-        <button (click)="add(formUserId.value, formInstitutionId.value, formName.value, formType.value); formName.value = ''">Crear</button>
+        <button (click)="add()" [disabled]="!form.userId || !form.institutionId || !form.name.trim()">Crear</button>
       </div>
     </details>
 
@@ -61,7 +62,9 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
             <td>{{ a.id }}</td>
             <td>
               @if (editingId === a.id) {
-                <input #editInput [value]="a.name" (keyup.enter)="save(a.id, editInput.value)" />
+                <input [(ngModel)]="editName" (keyup.enter)="save(a.id)" />
+                <button (click)="save(a.id)">Guardar</button>
+                <button (click)="cancelEdit()">Cancelar</button>
               } @else {
                 {{ a.name }}
               }
@@ -81,7 +84,6 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
   `,
   styles: [`
     .filters, .form-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-color); }
     details { margin-bottom: 16px; }
     summary { cursor: pointer; margin-bottom: 8px; font-weight: bold; }
@@ -94,14 +96,22 @@ export class AccountsComponent implements OnInit {
 
   filterUserId = '';
   filterType = '';
-
   editingId: number | null = null;
+  editName = '';
+
+  form = { userId: '', institutionId: '', name: '', type: 'DEBIT' };
 
   constructor(private api: ApiService) {}
 
   ngOnInit() {
-    this.api.getUsers().subscribe(u => this.users = u);
-    this.api.getInstitutions().subscribe(i => this.institutions = i);
+    this.api.getUsers().subscribe({
+      next: u => this.users = u,
+      error: e => console.error('Error al cargar personas', e),
+    });
+    this.api.getInstitutions().subscribe({
+      next: i => this.institutions = i,
+      error: e => console.error('Error al cargar instituciones', e),
+    });
     this.load();
   }
 
@@ -109,36 +119,46 @@ export class AccountsComponent implements OnInit {
     this.api.getAccounts({
       userId: this.filterUserId ? Number(this.filterUserId) : undefined,
       type: this.filterType || undefined,
-    }).subscribe(a => this.accounts = a);
+    }).subscribe({
+      next: a => this.accounts = a,
+      error: e => console.error('Error al cargar cuentas', e),
+    });
   }
 
   userName(id: number) { return this.users.find(u => u.id === id)?.name ?? id; }
   institutionName(id: number) { return this.institutions.find(i => i.id === id)?.name ?? id; }
 
-  add(userId: string, institutionId: string, name: string, type: string) {
-    if (!userId || !institutionId || !name.trim()) return;
+  add() {
+    if (!this.form.userId || !this.form.institutionId || !this.form.name.trim()) return;
     this.api.createAccount({
-      user_id: Number(userId),
-      institution_id: Number(institutionId),
-      name: name.trim(),
-      type,
-    }).subscribe(() => this.load());
-  }
-
-  startEdit(a: Account) { this.editingId = a.id; }
-
-  save(id: number, name: string) {
-    if (!name.trim()) return;
-    this.api.updateAccount(id, { name: name.trim() }).subscribe(() => {
-      this.editingId = null;
-      this.load();
+      user_id: Number(this.form.userId),
+      institution_id: Number(this.form.institutionId),
+      name: this.form.name.trim(),
+      type: this.form.type,
+    }).subscribe({
+      next: () => { this.form.name = ''; this.load(); },
+      error: e => console.error('Error al crear cuenta', e),
     });
   }
 
-  remove(id: number) {
-    if (confirm('¿Eliminar esta cuenta?')) {
-      this.api.deleteAccount(id).subscribe(() => this.load());
-    }
+  startEdit(a: Account) { this.editingId = a.id; this.editName = a.name; }
+
+  save(id: number) {
+    if (!this.editName.trim()) return;
+    this.api.updateAccount(id, { name: this.editName.trim() }).subscribe({
+      next: () => { this.editingId = null; this.load(); },
+      error: e => console.error('Error al actualizar cuenta', e),
+    });
   }
 
+  cancelEdit() { this.editingId = null; }
+
+  remove(id: number) {
+    if (confirm('¿Eliminar esta cuenta?')) {
+      this.api.deleteAccount(id).subscribe({
+        next: () => this.load(),
+        error: e => console.error('Error al eliminar cuenta', e),
+      });
+    }
+  }
 }

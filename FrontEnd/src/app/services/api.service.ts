@@ -73,7 +73,7 @@ export class ApiService {
     const query = qs.toString();
     return this.http.get<Transaction[]>(`${this.base}/transactions${query ? '?' + query : ''}`);
   }
-  createTransaction(data: { account_id: number; category_id: number; amount: number; date: string; description?: string; destination_account_id?: number }) {
+  createTransaction(data: { account_id: number; category_id?: number; amount: number; date: string; description?: string; destination_account_id?: number }) {
     return this.http.post<Transaction>(`${this.base}/transactions`, data);
   }
   deleteTransaction(id: number) { return this.http.delete<{ message: string }>(`${this.base}/transactions/${id}`); }

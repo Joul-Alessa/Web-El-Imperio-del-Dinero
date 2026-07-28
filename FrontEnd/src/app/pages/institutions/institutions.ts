@@ -1,18 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService, Institution } from '../../services/api.service';
 
 @Component({
   selector: 'app-institutions',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <h2>Instituciones</h2>
 
     <div class="form-row">
-      <input #nameInput placeholder="Nombre" />
-      <input #iconInput placeholder="Icono (opcional)" />
-      <button (click)="add(nameInput.value, iconInput.value); nameInput.value = ''; iconInput.value = ''">Añadir</button>
+      <input [(ngModel)]="newName" placeholder="Nombre" (keyup.enter)="add()" />
+      <input [(ngModel)]="newIcon" placeholder="Icono (opcional)" />
+      <button (click)="add()" [disabled]="!newName.trim()">Añadir</button>
     </div>
 
     <table>
@@ -25,7 +26,9 @@ import { ApiService, Institution } from '../../services/api.service';
             <td>{{ item.id }}</td>
             <td>
               @if (editingId === item.id) {
-                <input #editInput [value]="item.name" (keyup.enter)="save(item.id, editInput.value)" />
+                <input [(ngModel)]="editName" (keyup.enter)="save(item.id)" />
+                <button (click)="save(item.id)">Guardar</button>
+                <button (click)="cancelEdit()">Cancelar</button>
               } @else {
                 {{ item.name }}
               }
@@ -48,25 +51,36 @@ import { ApiService, Institution } from '../../services/api.service';
 export class InstitutionsComponent implements OnInit {
   list: Institution[] = [];
   editingId: number | null = null;
+  newName = '';
+  newIcon = '';
+  editName = '';
 
   constructor(private api: ApiService) {}
 
   ngOnInit() { this.load(); }
 
-  private load() { this.api.getInstitutions().subscribe(i => this.list = i); }
-
-  add(name: string, icon: string) {
-    if (!name.trim()) return;
-    this.api.createInstitution(name.trim(), icon.trim() || undefined).subscribe(() => this.load());
+  private load() {
+    this.api.getInstitutions().subscribe({
+      next: i => this.list = i,
+      error: e => console.error('Error al cargar instituciones', e),
+    });
   }
 
-  startEdit(item: Institution) { this.editingId = item.id; }
+  add() {
+    if (!this.newName.trim()) return;
+    this.api.createInstitution(this.newName.trim(), this.newIcon.trim() || undefined).subscribe({
+      next: () => { this.newName = ''; this.newIcon = ''; this.load(); },
+      error: e => console.error('Error al crear institución', e),
+    });
+  }
 
-  save(id: number, name: string) {
-    if (!name.trim()) return;
-    this.api.updateInstitution(id, { name: name.trim() }).subscribe(() => {
-      this.editingId = null;
-      this.load();
+  startEdit(item: Institution) { this.editingId = item.id; this.editName = item.name; }
+
+  save(id: number) {
+    if (!this.editName.trim()) return;
+    this.api.updateInstitution(id, { name: this.editName.trim() }).subscribe({
+      next: () => { this.editingId = null; this.load(); },
+      error: e => console.error('Error al actualizar institución', e),
     });
   }
 
@@ -74,7 +88,10 @@ export class InstitutionsComponent implements OnInit {
 
   remove(id: number) {
     if (confirm('¿Eliminar esta institución?')) {
-      this.api.deleteInstitution(id).subscribe(() => this.load());
+      this.api.deleteInstitution(id).subscribe({
+        next: () => this.load(),
+        error: e => console.error('Error al eliminar institución', e),
+      });
     }
   }
 }

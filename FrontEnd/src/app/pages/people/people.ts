@@ -1,17 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService, User } from '../../services/api.service';
 
 @Component({
   selector: 'app-people',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <h2>Personas</h2>
 
     <div class="form-row">
-      <input #nameInput placeholder="Nombre de la persona" />
-      <button (click)="addUser(nameInput.value); nameInput.value = ''">Añadir</button>
+      <input [(ngModel)]="newName" placeholder="Nombre de la persona" (keyup.enter)="addUser()" />
+      <button (click)="addUser()" [disabled]="!newName.trim()">Añadir</button>
     </div>
 
     <table>
@@ -24,8 +25,8 @@ import { ApiService, User } from '../../services/api.service';
             <td>{{ u.id }}</td>
             <td>
               @if (editingId === u.id) {
-                <input #editInput [value]="u.name" (keyup.enter)="saveUser(u.id, editInput.value)" />
-                <button (click)="saveUser(u.id, editInput.value)">Guardar</button>
+                <input [(ngModel)]="editName" (keyup.enter)="saveUser(u.id)" />
+                <button (click)="saveUser(u.id)">Guardar</button>
                 <button (click)="cancelEdit()">Cancelar</button>
               } @else {
                 {{ u.name }}
@@ -49,25 +50,35 @@ import { ApiService, User } from '../../services/api.service';
 export class PeopleComponent implements OnInit {
   users: User[] = [];
   editingId: number | null = null;
+  newName = '';
+  editName = '';
 
   constructor(private api: ApiService) {}
 
   ngOnInit() { this.load(); }
 
-  private load() { this.api.getUsers().subscribe(u => this.users = u); }
-
-  addUser(name: string) {
-    if (!name.trim()) return;
-    this.api.createUser(name.trim()).subscribe(() => this.load());
+  private load() {
+    this.api.getUsers().subscribe({
+      next: u => this.users = u,
+      error: e => console.error('Error al cargar personas', e),
+    });
   }
 
-  startEdit(u: User) { this.editingId = u.id; }
+  addUser() {
+    if (!this.newName.trim()) return;
+    this.api.createUser(this.newName.trim()).subscribe({
+      next: () => { this.newName = ''; this.load(); },
+      error: e => console.error('Error al crear persona', e),
+    });
+  }
 
-  saveUser(id: number, name: string) {
-    if (!name.trim()) return;
-    this.api.updateUser(id, name.trim()).subscribe(() => {
-      this.editingId = null;
-      this.load();
+  startEdit(u: User) { this.editingId = u.id; this.editName = u.name; }
+
+  saveUser(id: number) {
+    if (!this.editName.trim()) return;
+    this.api.updateUser(id, this.editName.trim()).subscribe({
+      next: () => { this.editingId = null; this.load(); },
+      error: e => console.error('Error al actualizar persona', e),
     });
   }
 
@@ -75,7 +86,10 @@ export class PeopleComponent implements OnInit {
 
   deleteUser(id: number) {
     if (confirm('¿Eliminar esta persona?')) {
-      this.api.deleteUser(id).subscribe(() => this.load());
+      this.api.deleteUser(id).subscribe({
+        next: () => this.load(),
+        error: e => console.error('Error al eliminar persona', e),
+      });
     }
   }
 }

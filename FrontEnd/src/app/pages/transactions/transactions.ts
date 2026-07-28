@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Category, Transaction } from '../../services/api.service';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <h2>Transacciones</h2>
 
@@ -13,54 +14,54 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
       <summary>Nueva transacción</summary>
       <div class="form-card">
         <div class="form-row">
-          <select #formAccountSelect>
+          <select [(ngModel)]="formAccountId">
             <option value="">Cuenta origen</option>
             @for (a of accounts; track a.id) {
               <option [value]="a.id">{{ accountLabel(a) }}</option>
             }
           </select>
-          <select #formTypeSelect (change)="formType = formTypeSelect.value">
+          <select [(ngModel)]="formType">
             <option value="INCOME">Ingreso</option>
-            <option value="EXPENSE" selected>Gasto</option>
+            <option value="EXPENSE">Gasto</option>
             <option value="TRANSFER">Transferencia</option>
           </select>
-          <select #formCategorySelect>
+          <select [(ngModel)]="formCategoryId">
             <option value="">Categoría</option>
-            @for (c of filteredCategories(formType); track c.id) {
+            @for (c of filteredCategories(); track c.id) {
               <option [value]="c.id">{{ c.name }}</option>
             }
           </select>
         </div>
         <div class="form-row">
-          <input type="number" #formAmount placeholder="Monto" />
-          <input type="date" #formDate [value]="today" />
-          <input #formDesc placeholder="Descripción (opcional)" />
+          <input type="number" [(ngModel)]="formAmount" placeholder="Monto" />
+          <input type="date" [(ngModel)]="formDate" />
+          <input [(ngModel)]="formDesc" placeholder="Descripción (opcional)" />
         </div>
         @if (formType === 'TRANSFER') {
           <div class="form-row">
-            <select (change)="transferDest = $any($event.target).value">
+            <select [(ngModel)]="transferDest">
               <option value="">Cuenta destino</option>
               @for (a of accounts; track a.id) {
-                @if (a.id !== (+formAccountSelect.value)) {
+                @if (a.id !== +formAccountId) {
                   <option [value]="a.id">{{ accountLabel(a) }}</option>
                 }
               }
             </select>
           </div>
         }
-        <button (click)="addTransaction(formAccountSelect.value, formTypeSelect.value, formCategorySelect.value, formAmount.value, formDate.value, formDesc.value)">Guardar</button>
+        <button (click)="addTransaction()" [disabled]="!formAccountId || !formAmount">Guardar</button>
       </div>
     </details>
 
     <div class="filters">
-      <select (change)="filterAccountId = $any($event.target).value; load()">
+      <select [(ngModel)]="filterAccountId" (ngModelChange)="load()">
         <option value="">Todas las cuentas</option>
         @for (a of accounts; track a.id) {
           <option [value]="a.id">{{ accountLabel(a) }}</option>
         }
       </select>
-      <input type="date" (change)="filterFrom = $any($event.target).value; load()" placeholder="Desde" />
-      <input type="date" (change)="filterTo = $any($event.target).value; load()" placeholder="Hasta" />
+      <input type="date" [(ngModel)]="filterFrom" (ngModelChange)="load()" placeholder="Desde" />
+      <input type="date" [(ngModel)]="filterTo" (ngModelChange)="load()" placeholder="Hasta" />
     </div>
 
     <table>
@@ -103,22 +104,34 @@ export class TransactionsComponent implements OnInit {
   filterFrom = '';
   filterTo = '';
 
+  formAccountId = '';
   formType = 'EXPENSE';
+  formCategoryId = '';
+  formAmount = '';
+  formDate = new Date().toISOString().slice(0, 10);
+  formDesc = '';
   transferDest = '';
 
   constructor(private api: ApiService) {}
 
   ngOnInit() {
-    this.api.getUsers().subscribe(u => this.users = u);
-    this.api.getAccounts().subscribe(a => this.accounts = a);
-    this.api.getCategories().subscribe(c => this.categories = c);
+    this.api.getUsers().subscribe({
+      next: u => this.users = u,
+      error: e => console.error('Error al cargar personas', e),
+    });
+    this.api.getAccounts().subscribe({
+      next: a => this.accounts = a,
+      error: e => console.error('Error al cargar cuentas', e),
+    });
+    this.api.getCategories().subscribe({
+      next: c => this.categories = c,
+      error: e => console.error('Error al cargar categorías', e),
+    });
     this.load();
   }
 
-  get today() { return new Date().toISOString().slice(0, 10); }
-
-  filteredCategories(type: string) {
-    return this.categories.filter(c => c.type === type);
+  filteredCategories() {
+    return this.categories.filter(c => c.type === this.formType);
   }
 
   accountLabel(a: Account) {
@@ -135,29 +148,37 @@ export class TransactionsComponent implements OnInit {
       accountId: this.filterAccountId ? Number(this.filterAccountId) : undefined,
       from: this.filterFrom || undefined,
       to: this.filterTo || undefined,
-    }).subscribe(t => this.transactions = t);
+    }).subscribe({
+      next: t => this.transactions = t,
+      error: e => console.error('Error al cargar transacciones', e),
+    });
   }
 
-  addTransaction(accountId: string, type: string, categoryId: string, amount: string, date: string, description: string) {
-    const numericAmount = type === 'EXPENSE' || type === 'TRANSFER'
-      ? -Math.abs(Number(amount))
-      : Math.abs(Number(amount));
+  addTransaction() {
+    if (!this.formAccountId || !this.formAmount) return;
+    const numericAmount = this.formType === 'EXPENSE' || this.formType === 'TRANSFER'
+      ? -Math.abs(Number(this.formAmount))
+      : Math.abs(Number(this.formAmount));
 
     this.api.createTransaction({
-      account_id: Number(accountId),
-      category_id: Number(categoryId),
+      account_id: Number(this.formAccountId),
+      category_id: this.formCategoryId ? Number(this.formCategoryId) : undefined,
       amount: numericAmount,
-      date,
-      description: description || undefined,
-      destination_account_id: type === 'TRANSFER' ? Number(this.transferDest) || undefined : undefined,
-    }).subscribe(() => {
-      this.load();
+      date: this.formDate,
+      description: this.formDesc || undefined,
+      destination_account_id: this.formType === 'TRANSFER' && this.transferDest ? Number(this.transferDest) : undefined,
+    }).subscribe({
+      next: () => { this.formAmount = ''; this.formDesc = ''; this.load(); },
+      error: e => console.error('Error al crear transacción', e),
     });
   }
 
   remove(id: number) {
     if (confirm('¿Eliminar esta transacción?')) {
-      this.api.deleteTransaction(id).subscribe(() => this.load());
+      this.api.deleteTransaction(id).subscribe({
+        next: () => this.load(),
+        error: e => console.error('Error al eliminar transacción', e),
+      });
     }
   }
 }
