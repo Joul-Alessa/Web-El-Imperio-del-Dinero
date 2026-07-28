@@ -60,6 +60,125 @@
   --accent-light: #81c784;
 
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
+
+/* ---- Overrides fuertes de Angular Material en modo oscuro ---- */
+[data-theme='dark'] {
+  /* Fondos de componentes Material */
+  --mat-sys-surface: #1c1c1c;
+  --mat-sys-surface-container: #1c1c1c;
+  --mat-sys-surface-container-high: #252525;
+  --mat-sys-surface-container-highest: #2a2a2a;
+  --mat-sys-surface-container-low: #191919;
+  --mat-sys-surface-container-lowest: #141414;
+  --mat-sys-background: #111111;
+  --mat-sys-on-surface: #ebebeb;
+  --mat-sys-on-surface-variant: #b0b0b0;
+  --mat-sys-on-background: #ebebeb;
+  --mat-sys-outline: #404040;
+  --mat-sys-outline-variant: #2e2e2e;
+  --mat-sys-primary: #4caf50;
+  --mat-sys-on-primary: #ffffff;
+}
+
+[data-theme='dark'] mat-drawer-container,
+[data-theme='dark'] mat-drawer-content,
+[data-theme='dark'] .mat-drawer-content,
+[data-theme='dark'] .mat-drawer-container {
+  background: var(--bg-body) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] mat-drawer,
+[data-theme='dark'] .mat-drawer,
+[data-theme='dark'] .mat-drawer-inner-container {
+  background: var(--bg-sidebar) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] mat-nav-list a,
+[data-theme='dark'] .mat-mdc-list-item,
+[data-theme='dark'] .mdc-list-item__primary-text,
+[data-theme='dark'] .mat-mdc-list-item-unscoped-content {
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .mat-mdc-list-item:hover {
+  background: var(--bg-surface-hover) !important;
+}
+
+[data-theme='dark'] .content,
+[data-theme='dark'] .content * {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] input,
+[data-theme='dark'] select,
+[data-theme='dark'] textarea {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-input) !important;
+}
+
+[data-theme='dark'] option {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] table {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] th {
+  background: var(--bg-surface-hover) !important;
+  color: var(--text-secondary) !important;
+}
+
+[data-theme='dark'] td {
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] tr:nth-child(even) td {
+  background: var(--bg-table-stripe) !important;
+}
+
+[data-theme='dark'] details {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] summary {
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .card {
+  background: var(--bg-surface-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .form-card {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] h1,
+[data-theme='dark'] h2,
+[data-theme='dark'] h3,
+[data-theme='dark'] h4,
+[data-theme='dark'] label,
+[data-theme='dark'] span,
+[data-theme='dark'] p,
+[data-theme='dark'] div {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .active-link,
+[data-theme='dark'] .active-link .mdc-list-item__primary-text {
+  color: var(--accent) !important;
 }
 
 html, body {
