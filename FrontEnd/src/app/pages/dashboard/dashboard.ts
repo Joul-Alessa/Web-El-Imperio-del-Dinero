@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService, Account, User } from '../../services/api.service';
 import {
@@ -71,7 +71,7 @@ Chart.register(
     h3 { margin: 0 0 12px 0; font-size: 1rem; }
   `]
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('barChart') barCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('doughnutChart') doughnutCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('lineChart') lineCanvas!: ElementRef<HTMLCanvasElement>;
@@ -92,6 +92,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   private barChart?: Chart;
   private doughnutChart?: Chart;
   private lineChart?: Chart;
+  private themeObserver?: MutationObserver;
 
   constructor(private api: ApiService) {}
 
@@ -102,6 +103,15 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     setTimeout(() => this.renderCharts(), 500);
+    this.themeObserver = new MutationObserver(() => this.renderCharts());
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+
+  ngOnDestroy() {
+    this.themeObserver?.disconnect();
+    this.barChart?.destroy();
+    this.doughnutChart?.destroy();
+    this.lineChart?.destroy();
   }
 
   load() {
@@ -123,6 +133,9 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   }
 
   private renderCharts() {
+    const style = getComputedStyle(document.documentElement);
+    Chart.defaults.color = style.getPropertyValue('--text-primary').trim() || '#333';
+    Chart.defaults.borderColor = style.getPropertyValue('--border-color').trim() || '#ccc';
     this.renderBarChart();
     this.renderDoughnutChart();
     this.renderLineChart();

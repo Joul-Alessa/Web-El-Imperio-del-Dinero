@@ -110,8 +110,13 @@
 }
 
 [data-theme='dark'] .content,
-[data-theme='dark'] .content * {
-  color: var(--text-primary);
+[data-theme='dark'] .content *:not(.positive):not(.negative):not(button):not(.mat-icon):not(mat-icon) {
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .content .text-muted,
+[data-theme='dark'] .content .muted {
+  color: var(--text-muted) !important;
 }
 
 [data-theme='dark'] input,
@@ -169,11 +174,30 @@
 [data-theme='dark'] h2,
 [data-theme='dark'] h3,
 [data-theme='dark'] h4,
+[data-theme='dark'] h5,
+[data-theme='dark'] h6,
 [data-theme='dark'] label,
-[data-theme='dark'] span,
 [data-theme='dark'] p,
-[data-theme='dark'] div {
-  color: var(--text-primary);
+[data-theme='dark'] .mat-typography h1,
+[data-theme='dark'] .mat-typography h2,
+[data-theme='dark'] .mat-typography h3,
+[data-theme='dark'] .mat-typography h4,
+[data-theme='dark'] .mat-typography p {
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] mat-nav-list a,
+[data-theme='dark'] mat-nav-list a *,
+[data-theme='dark'] .mat-mdc-list-item,
+[data-theme='dark'] .mat-mdc-list-item *,
+[data-theme='dark'] .mdc-list-item__primary-text,
+[data-theme='dark'] .mat-mdc-list-item-unscoped-content {
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] mat-nav-list mat-icon,
+[data-theme='dark'] mat-drawer mat-icon {
+  color: var(--text-secondary) !important;
 }
 
 [data-theme='dark'] .active-link,
