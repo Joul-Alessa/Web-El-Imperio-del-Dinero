@@ -1,50 +1,40 @@
-# ---- Stage 1: Build Angular frontend ----
-FROM node:22-bookworm-slim AS frontend-build
+# ---- Stage 1: Build TypeScript ----
+FROM node:22.17.0-bookworm-slim AS build
 
-WORKDIR /app/frontend
+WORKDIR /app
 
-COPY FrontEnd/package.json FrontEnd/package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY FrontEnd/ ./
-RUN npm run build -- --output-path=/app/dist-frontend
+COPY tsconfig.json ./
+COPY src/ ./src/
+COPY migrations/ ./migrations/
+COPY knexfile.ts ./
+RUN npm run build
 
-# ---- Stage 2: Build TypeScript backend ----
-FROM node:22-bookworm-slim AS backend-build
-
-WORKDIR /app/backend
-
-COPY BackEnd/package.json BackEnd/package-lock.json ./
-RUN npm ci
-
-COPY BackEnd/tsconfig.json ./
-COPY BackEnd/src/ ./src/
-COPY BackEnd/migrations/ ./migrations/
-COPY BackEnd/knexfile.ts ./
-RUN npx tsc
-
-# ---- Stage 3: Production image ----
-FROM node:22-alpine
+# ---- Stage 2: Production runtime ----
+FROM node:22.17.0-alpine3.22
 
 RUN apk add --no-cache tini
 
 WORKDIR /app
 
-COPY --from=backend-build /app/backend/dist/ ./dist/
-COPY --from=backend-build /app/backend/node_modules/ ./node_modules/
-COPY --from=backend-build /app/backend/package.json ./package.json
-COPY --from=backend-build /app/backend/migrations/ ./migrations/
-COPY --from=backend-build /app/backend/knexfile.ts ./knexfile.ts
+COPY --from=build /app/dist/ ./dist/
+COPY --from=build /app/node_modules/ ./node_modules/
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/migrations/ ./migrations/
+COPY --from=build /app/knexfile.ts ./knexfile.ts
 
-COPY --from=frontend-build /app/dist-frontend/ ./public/
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV STATIC_DIR=/app/public
+ENV DB_PATH=/app/data/data.db
 
 VOLUME /app/data
 
 EXPOSE 3000
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/server.js"]
+CMD ["/usr/local/bin/entrypoint.sh"]

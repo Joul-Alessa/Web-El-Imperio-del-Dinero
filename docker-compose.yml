@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile
+    image: imperio-dinero-backend:1.0.0
+    container_name: imperio-backend
+    volumes:
+      - app-data:/app/data
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/data/data.db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile
+    image: imperio-dinero-frontend:1.0.0
+    container_name: imperio-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  app-data:
