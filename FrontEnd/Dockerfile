@@ -1,5 +1,5 @@
 # ---- Stage 1: Build Angular ----
-FROM node:22.17.0-bookworm-slim AS build
+FROM node:24.15.0-bookworm-slim AS build
 
 WORKDIR /app
 

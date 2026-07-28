@@ -1,5 +1,7 @@
 # ---- Stage 1: Build TypeScript ----
-FROM node:22.17.0-bookworm-slim AS build
+FROM node:22.17.0-alpine3.22 AS build
+
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
