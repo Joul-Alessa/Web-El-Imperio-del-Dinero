@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Institution } from '../../services/api.service';
@@ -13,7 +13,7 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
     <div class="filters">
       <select [(ngModel)]="filterUserId" (ngModelChange)="load()">
         <option value="">Todas las personas</option>
-        @for (u of users; track u.id) {
+        @for (u of users(); track u.id) {
           <option [value]="u.id">{{ u.name }}</option>
         }
       </select>
@@ -31,13 +31,13 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
       <div class="form-row">
         <select [(ngModel)]="form.userId">
           <option value="">Persona</option>
-          @for (u of users; track u.id) {
+          @for (u of users(); track u.id) {
             <option [value]="u.id">{{ u.name }}</option>
           }
         </select>
         <select [(ngModel)]="form.institutionId">
           <option value="">Institución</option>
-          @for (inst of institutions; track inst.id) {
+          @for (inst of institutions(); track inst.id) {
             <option [value]="inst.id">{{ inst.name }}</option>
           }
         </select>
@@ -57,11 +57,11 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
         <tr><th>ID</th><th>Nombre</th><th>Persona</th><th>Institución</th><th>Tipo</th><th>Moneda</th><th>Acciones</th></tr>
       </thead>
       <tbody>
-        @for (a of accounts; track a.id) {
+        @for (a of accounts(); track a.id) {
           <tr>
             <td>{{ a.id }}</td>
             <td>
-              @if (editingId === a.id) {
+              @if (editingId() === a.id) {
                 <input [(ngModel)]="editName" (keyup.enter)="save(a.id)" />
                 <button (click)="save(a.id)">Guardar</button>
                 <button (click)="cancelEdit()">Cancelar</button>
@@ -90,13 +90,13 @@ import { ApiService, Account, User, Institution } from '../../services/api.servi
   `]
 })
 export class AccountsComponent implements OnInit {
-  accounts: Account[] = [];
-  users: User[] = [];
-  institutions: Institution[] = [];
+  accounts = signal<Account[]>([]);
+  users = signal<User[]>([]);
+  institutions = signal<Institution[]>([]);
+  editingId = signal<number | null>(null);
 
   filterUserId = '';
   filterType = '';
-  editingId: number | null = null;
   editName = '';
 
   form = { userId: '', institutionId: '', name: '', type: 'DEBIT' };
@@ -105,11 +105,11 @@ export class AccountsComponent implements OnInit {
 
   ngOnInit() {
     this.api.getUsers().subscribe({
-      next: u => this.users = u,
+      next: u => this.users.set(u),
       error: e => console.error('Error al cargar personas', e),
     });
     this.api.getInstitutions().subscribe({
-      next: i => this.institutions = i,
+      next: i => this.institutions.set(i),
       error: e => console.error('Error al cargar instituciones', e),
     });
     this.load();
@@ -120,13 +120,13 @@ export class AccountsComponent implements OnInit {
       userId: this.filterUserId ? Number(this.filterUserId) : undefined,
       type: this.filterType || undefined,
     }).subscribe({
-      next: a => this.accounts = a,
+      next: a => this.accounts.set(a),
       error: e => console.error('Error al cargar cuentas', e),
     });
   }
 
-  userName(id: number) { return this.users.find(u => u.id === id)?.name ?? id; }
-  institutionName(id: number) { return this.institutions.find(i => i.id === id)?.name ?? id; }
+  userName(id: number) { return this.users().find(u => u.id === id)?.name ?? id; }
+  institutionName(id: number) { return this.institutions().find(i => i.id === id)?.name ?? id; }
 
   add() {
     if (!this.form.userId || !this.form.institutionId || !this.form.name.trim()) return;
@@ -141,17 +141,17 @@ export class AccountsComponent implements OnInit {
     });
   }
 
-  startEdit(a: Account) { this.editingId = a.id; this.editName = a.name; }
+  startEdit(a: Account) { this.editingId.set(a.id); this.editName = a.name; }
 
   save(id: number) {
     if (!this.editName.trim()) return;
     this.api.updateAccount(id, { name: this.editName.trim() }).subscribe({
-      next: () => { this.editingId = null; this.load(); },
+      next: () => { this.editingId.set(null); this.load(); },
       error: e => console.error('Error al actualizar cuenta', e),
     });
   }
 
-  cancelEdit() { this.editingId = null; }
+  cancelEdit() { this.editingId.set(null); }
 
   remove(id: number) {
     if (confirm('¿Eliminar esta cuenta?')) {

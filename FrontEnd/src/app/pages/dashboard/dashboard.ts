@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService, Account, User } from '../../services/api.service';
 import {
@@ -21,7 +21,7 @@ Chart.register(
     <div class="filters">
       <select (change)="filterUserId = $any($event.target).value; load()">
         <option value="">Todas las personas</option>
-        @for (u of users; track u.id) { <option [value]="u.id">{{ u.name }}</option> }
+        @for (u of users(); track u.id) { <option [value]="u.id">{{ u.name }}</option> }
       </select>
       <select (change)="filterAccountType = $any($event.target).value; load()">
         <option value="">Todos los tipos</option>
@@ -36,10 +36,10 @@ Chart.register(
     </div>
 
     <div class="summary">
-      <div class="card">Ingresos<br/><span class="positive">{{ summary.totalIncome | number:'1.2-2' }}</span></div>
-      <div class="card">Gastos<br/><span class="negative">{{ summary.totalExpense | number:'1.2-2' }}</span></div>
-      <div class="card">Flujo neto<br/><span [class.positive]="summary.netFlow >= 0" [class.negative]="summary.netFlow < 0">{{ summary.netFlow | number:'1.2-2' }}</span></div>
-      <div class="card">Transacciones<br/>{{ summary.transactionCount }}</div>
+      <div class="card">Ingresos<br/><span class="positive">{{ summary().totalIncome | number:'1.2-2' }}</span></div>
+      <div class="card">Gastos<br/><span class="negative">{{ summary().totalExpense | number:'1.2-2' }}</span></div>
+      <div class="card">Flujo neto<br/><span [class.positive]="summary().netFlow >= 0" [class.negative]="summary().netFlow < 0">{{ summary().netFlow | number:'1.2-2' }}</span></div>
+      <div class="card">Transacciones<br/>{{ summary().transactionCount }}</div>
     </div>
 
     <div class="charts">
@@ -76,8 +76,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('doughnutChart') doughnutCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('lineChart') lineCanvas!: ElementRef<HTMLCanvasElement>;
 
-  users: User[] = [];
-  accounts: Account[] = [];
+  users = signal<User[]>([]);
+  accounts = signal<Account[]>([]);
 
   filterUserId = '';
   filterAccountType = '';
@@ -85,9 +85,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   filterTo = '';
   cumulative = false;
 
-  summary: any = {};
-  topCategories: any[] = [];
-  monthlyTrend: any[] = [];
+  summary = signal<any>({});
+  topCategories = signal<any[]>([]);
+  monthlyTrend = signal<any[]>([]);
 
   private barChart?: Chart;
   private doughnutChart?: Chart;
@@ -97,7 +97,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private api: ApiService) {}
 
   ngOnInit() {
-    this.api.getUsers().subscribe({ next: u => this.users = u, error: e => console.error('Error al cargar personas', e) });
+    this.api.getUsers().subscribe({ next: u => this.users.set(u), error: e => console.error('Error al cargar personas', e) });
     this.load();
   }
 
@@ -123,9 +123,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       cumulative: this.cumulative,
     }).subscribe({
       next: data => {
-        this.summary = data.summary;
-        this.topCategories = data.topCategories ?? [];
-        this.monthlyTrend = data.monthlyTrend ?? [];
+        this.summary.set(data.summary ?? {});
+        this.topCategories.set(data.topCategories ?? []);
+        this.monthlyTrend.set(data.monthlyTrend ?? []);
         this.renderCharts();
       },
       error: e => console.error('Error al cargar analytics', e),
@@ -143,13 +143,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private renderBarChart() {
     this.barChart?.destroy();
+    const s = this.summary();
     this.barChart = new Chart(this.barCanvas.nativeElement, {
       type: 'bar',
       data: {
         labels: ['Ingresos', 'Gastos'],
         datasets: [{
           label: 'MXN',
-          data: [this.summary.totalIncome ?? 0, this.summary.totalExpense ?? 0],
+          data: [s.totalIncome ?? 0, s.totalExpense ?? 0],
           backgroundColor: ['#4caf50', '#f44336'],
         }],
       },
@@ -159,7 +160,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private renderDoughnutChart() {
     this.doughnutChart?.destroy();
-    const data = this.topCategories;
+    const data = this.topCategories();
     if (!data.length) return;
     const colors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63', '#3f51b5', '#ff5722', '#607d8b', '#795548'];
     this.doughnutChart = new Chart(this.doughnutCanvas.nativeElement, {
@@ -177,7 +178,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private renderLineChart() {
     this.lineChart?.destroy();
-    const trend = this.monthlyTrend;
+    const trend = this.monthlyTrend();
     if (!trend.length) return;
     this.lineChart = new Chart(this.lineCanvas.nativeElement, {
       type: 'line',

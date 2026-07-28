@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Institution } from '../../services/api.service';
@@ -21,11 +21,11 @@ import { ApiService, Institution } from '../../services/api.service';
         <tr><th>ID</th><th>Nombre</th><th>Icono</th><th>Acciones</th></tr>
       </thead>
       <tbody>
-        @for (item of list; track item.id) {
+        @for (item of list(); track item.id) {
           <tr>
             <td>{{ item.id }}</td>
             <td>
-              @if (editingId === item.id) {
+              @if (editingId() === item.id) {
                 <input [(ngModel)]="editName" (keyup.enter)="save(item.id)" />
                 <button (click)="save(item.id)">Guardar</button>
                 <button (click)="cancelEdit()">Cancelar</button>
@@ -49,8 +49,8 @@ import { ApiService, Institution } from '../../services/api.service';
   `]
 })
 export class InstitutionsComponent implements OnInit {
-  list: Institution[] = [];
-  editingId: number | null = null;
+  list = signal<Institution[]>([]);
+  editingId = signal<number | null>(null);
   newName = '';
   newIcon = '';
   editName = '';
@@ -61,7 +61,7 @@ export class InstitutionsComponent implements OnInit {
 
   private load() {
     this.api.getInstitutions().subscribe({
-      next: i => this.list = i,
+      next: i => this.list.set(i),
       error: e => console.error('Error al cargar instituciones', e),
     });
   }
@@ -74,17 +74,17 @@ export class InstitutionsComponent implements OnInit {
     });
   }
 
-  startEdit(item: Institution) { this.editingId = item.id; this.editName = item.name; }
+  startEdit(item: Institution) { this.editingId.set(item.id); this.editName = item.name; }
 
   save(id: number) {
     if (!this.editName.trim()) return;
     this.api.updateInstitution(id, { name: this.editName.trim() }).subscribe({
-      next: () => { this.editingId = null; this.load(); },
+      next: () => { this.editingId.set(null); this.load(); },
       error: e => console.error('Error al actualizar institución', e),
     });
   }
 
-  cancelEdit() { this.editingId = null; }
+  cancelEdit() { this.editingId.set(null); }
 
   remove(id: number) {
     if (confirm('¿Eliminar esta institución?')) {

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Category, Transaction } from '../../services/api.service';
@@ -16,7 +16,7 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
         <div class="form-row">
           <select [(ngModel)]="formAccountId">
             <option value="">Cuenta origen</option>
-            @for (a of accounts; track a.id) {
+            @for (a of accounts(); track a.id) {
               <option [value]="a.id">{{ accountLabel(a) }}</option>
             }
           </select>
@@ -41,7 +41,7 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
           <div class="form-row">
             <select [(ngModel)]="transferDest">
               <option value="">Cuenta destino</option>
-              @for (a of accounts; track a.id) {
+              @for (a of accounts(); track a.id) {
                 @if (a.id !== +formAccountId) {
                   <option [value]="a.id">{{ accountLabel(a) }}</option>
                 }
@@ -56,7 +56,7 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
     <div class="filters">
       <select [(ngModel)]="filterAccountId" (ngModelChange)="load()">
         <option value="">Todas las cuentas</option>
-        @for (a of accounts; track a.id) {
+        @for (a of accounts(); track a.id) {
           <option [value]="a.id">{{ accountLabel(a) }}</option>
         }
       </select>
@@ -71,7 +71,7 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
         </tr>
       </thead>
       <tbody>
-        @for (tx of transactions; track tx.id) {
+        @for (tx of transactions(); track tx.id) {
           <tr>
             <td>{{ tx.date }}</td>
             <td>{{ tx.description || '-' }}</td>
@@ -95,10 +95,10 @@ import { ApiService, Account, User, Category, Transaction } from '../../services
   `]
 })
 export class TransactionsComponent implements OnInit {
-  accounts: Account[] = [];
-  users: User[] = [];
-  categories: Category[] = [];
-  transactions: Transaction[] = [];
+  accounts = signal<Account[]>([]);
+  users = signal<User[]>([]);
+  categories = signal<Category[]>([]);
+  transactions = signal<Transaction[]>([]);
 
   filterAccountId = '';
   filterFrom = '';
@@ -116,31 +116,31 @@ export class TransactionsComponent implements OnInit {
 
   ngOnInit() {
     this.api.getUsers().subscribe({
-      next: u => this.users = u,
+      next: u => this.users.set(u),
       error: e => console.error('Error al cargar personas', e),
     });
     this.api.getAccounts().subscribe({
-      next: a => this.accounts = a,
+      next: a => this.accounts.set(a),
       error: e => console.error('Error al cargar cuentas', e),
     });
     this.api.getCategories().subscribe({
-      next: c => this.categories = c,
+      next: c => this.categories.set(c),
       error: e => console.error('Error al cargar categorías', e),
     });
     this.load();
   }
 
   filteredCategories() {
-    return this.categories.filter(c => c.type === this.formType);
+    return this.categories().filter(c => c.type === this.formType);
   }
 
   accountLabel(a: Account) {
-    const u = this.users.find(u => u.id === a.userId);
+    const u = this.users().find(u => u.id === a.userId);
     return `${a.name} (${u?.name ?? a.userId})`;
   }
 
   categoryName(id: number) {
-    return this.categories.find(c => c.id === id)?.name ?? id;
+    return this.categories().find(c => c.id === id)?.name ?? id;
   }
 
   load() {
@@ -149,7 +149,7 @@ export class TransactionsComponent implements OnInit {
       from: this.filterFrom || undefined,
       to: this.filterTo || undefined,
     }).subscribe({
-      next: t => this.transactions = t,
+      next: t => this.transactions.set(t),
       error: e => console.error('Error al cargar transacciones', e),
     });
   }

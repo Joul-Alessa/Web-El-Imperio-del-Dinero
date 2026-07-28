@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Account, User, Asset } from '../../services/api.service';
@@ -31,11 +31,11 @@ import { ApiService, Account, User, Asset } from '../../services/api.service';
         <div class="form-row">
           <select [(ngModel)]="tradeForm.accountId">
             <option value="">Cuenta</option>
-            @for (a of investAccounts; track a.id) { <option [value]="a.id">{{ a.name }}</option> }
+            @for (a of investAccounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
           </select>
           <select [(ngModel)]="tradeForm.assetId">
             <option value="">Activo</option>
-            @for (a of assets; track a.id) { <option [value]="a.id">{{ a.ticker }} - {{ a.name }}</option> }
+            @for (a of assets(); track a.id) { <option [value]="a.id">{{ a.ticker }} - {{ a.name }}</option> }
           </select>
           <select [(ngModel)]="tradeForm.type">
             <option value="BUY">Compra</option>
@@ -57,7 +57,7 @@ import { ApiService, Account, User, Asset } from '../../services/api.service';
       <div class="form-row">
         <select [(ngModel)]="revForm.accountId">
           <option value="">Cuenta</option>
-          @for (a of accounts; track a.id) { <option [value]="a.id">{{ a.name }}</option> }
+          @for (a of accounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
         </select>
         <input type="number" [(ngModel)]="revForm.newBalance" placeholder="Nuevo saldo" />
         <input [(ngModel)]="revForm.notes" placeholder="Nota (opcional)" />
@@ -71,7 +71,7 @@ import { ApiService, Account, User, Asset } from '../../services/api.service';
         <tr><th>Activo</th><th>Ticker</th><th>Tipo</th><th>Cantidad</th><th>Precio prom.</th><th>Cuenta</th><th>Persona</th></tr>
       </thead>
       <tbody>
-        @for (h of portfolio; track h.holdingId) {
+        @for (h of portfolio(); track h.holdingId) {
           <tr>
             <td>{{ h.assetName }}</td>
             <td>{{ h.ticker }}</td>
@@ -95,11 +95,11 @@ import { ApiService, Account, User, Asset } from '../../services/api.service';
   `]
 })
 export class InvestmentsComponent implements OnInit {
-  accounts: Account[] = [];
-  users: User[] = [];
-  assets: Asset[] = [];
-  portfolio: any[] = [];
-  investAccounts: Account[] = [];
+  accounts = signal<Account[]>([]);
+  users = signal<User[]>([]);
+  assets = signal<Asset[]>([]);
+  portfolio = signal<any[]>([]);
+  investAccounts = computed(() => this.accounts().filter(a => a.type === 'INVESTMENT'));
 
   assetForm = { ticker: '', name: '', type: 'STOCK' };
   tradeForm = { accountId: '', assetId: '', type: 'BUY', quantity: '', price: '', fee: '', date: new Date().toISOString().slice(0, 10) };
@@ -109,15 +109,15 @@ export class InvestmentsComponent implements OnInit {
 
   ngOnInit() {
     this.api.getUsers().subscribe({
-      next: u => this.users = u,
+      next: u => this.users.set(u),
       error: e => console.error('Error al cargar personas', e),
     });
     this.api.getAccounts().subscribe({
-      next: a => { this.accounts = a; this.investAccounts = a.filter(ac => ac.type === 'INVESTMENT'); },
+      next: a => this.accounts.set(a),
       error: e => console.error('Error al cargar cuentas', e),
     });
     this.api.getAssets().subscribe({
-      next: a => this.assets = a,
+      next: a => this.assets.set(a),
       error: e => console.error('Error al cargar activos', e),
     });
     this.loadPortfolio();
@@ -125,7 +125,7 @@ export class InvestmentsComponent implements OnInit {
 
   loadPortfolio() {
     this.api.getPortfolio().subscribe({
-      next: p => this.portfolio = p,
+      next: p => this.portfolio.set(p),
       error: e => console.error('Error al cargar portafolio', e),
     });
   }
@@ -140,7 +140,7 @@ export class InvestmentsComponent implements OnInit {
       next: () => {
         this.assetForm.ticker = '';
         this.assetForm.name = '';
-        this.api.getAssets().subscribe({ next: a => this.assets = a });
+        this.api.getAssets().subscribe({ next: a => this.assets.set(a) });
       },
       error: e => console.error('Error al crear activo', e),
     });

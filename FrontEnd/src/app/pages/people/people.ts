@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, User } from '../../services/api.service';
@@ -20,11 +20,11 @@ import { ApiService, User } from '../../services/api.service';
         <tr><th>ID</th><th>Nombre</th><th>Creado</th><th>Acciones</th></tr>
       </thead>
       <tbody>
-        @for (u of users; track u.id) {
+        @for (u of users(); track u.id) {
           <tr>
             <td>{{ u.id }}</td>
             <td>
-              @if (editingId === u.id) {
+              @if (editingId() === u.id) {
                 <input [(ngModel)]="editName" (keyup.enter)="saveUser(u.id)" />
                 <button (click)="saveUser(u.id)">Guardar</button>
                 <button (click)="cancelEdit()">Cancelar</button>
@@ -48,8 +48,8 @@ import { ApiService, User } from '../../services/api.service';
   `]
 })
 export class PeopleComponent implements OnInit {
-  users: User[] = [];
-  editingId: number | null = null;
+  users = signal<User[]>([]);
+  editingId = signal<number | null>(null);
   newName = '';
   editName = '';
 
@@ -59,7 +59,7 @@ export class PeopleComponent implements OnInit {
 
   private load() {
     this.api.getUsers().subscribe({
-      next: u => this.users = u,
+      next: u => this.users.set(u),
       error: e => console.error('Error al cargar personas', e),
     });
   }
@@ -72,17 +72,17 @@ export class PeopleComponent implements OnInit {
     });
   }
 
-  startEdit(u: User) { this.editingId = u.id; this.editName = u.name; }
+  startEdit(u: User) { this.editingId.set(u.id); this.editName = u.name; }
 
   saveUser(id: number) {
     if (!this.editName.trim()) return;
     this.api.updateUser(id, this.editName.trim()).subscribe({
-      next: () => { this.editingId = null; this.load(); },
+      next: () => { this.editingId.set(null); this.load(); },
       error: e => console.error('Error al actualizar persona', e),
     });
   }
 
-  cancelEdit() { this.editingId = null; }
+  cancelEdit() { this.editingId.set(null); }
 
   deleteUser(id: number) {
     if (confirm('¿Eliminar esta persona?')) {
