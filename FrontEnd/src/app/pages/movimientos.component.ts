@@ -165,12 +165,21 @@ interface MovForm {
             }
 
             <div class="form-grid">
-              <div class="field">
+              <!-- Row 1: Fecha y hora (full-width) -->
+              <div class="field" style="grid-column:1 / -1">
                 <label>Fecha y hora</label>
                 <div class="flex gap-8">
                   <input class="input" type="date" [ngModel]="form().fecha" (ngModelChange)="setFecha($event)" style="flex:2" />
                   <input class="input" type="time" [ngModel]="form().hora" (ngModelChange)="setHora($event)" style="flex:1" />
                 </div>
+              </div>
+
+              <!-- Row 2: Persona | Cuenta -->
+              <div class="field">
+                <label>Persona</label>
+                <select class="select" [(ngModel)]="form().persona_id">
+                  @for (p of personas(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
+                </select>
               </div>
               <div class="field">
                 <label>Cuenta</label>
@@ -179,21 +188,15 @@ interface MovForm {
                   @for (c of cuentas(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }} ({{ c.divisa_codigo }})</option> }
                 </select>
               </div>
-              <div class="field">
-                <label>Persona</label>
-                <select class="select" [(ngModel)]="form().persona_id">
-                  @for (p of personas(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
-                </select>
-              </div>
-              <div class="field">
-                <label>Divisa</label>
-                <select class="select" [(ngModel)]="form().divisa_id">
-                  @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
-                </select>
-              </div>
 
               <!-- Revalorización -->
               @if (form().tipo === 'revalorizacion') {
+                <div class="field" style="grid-column:1 / -1">
+                  <label>Divisa</label>
+                  <select class="select" [(ngModel)]="form().divisa_id">
+                    @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
+                  </select>
+                </div>
                 <div class="field" style="grid-column:1 / -1">
                   <div class="card" style="padding:12px 14px; background:var(--surface-2)">
                     <div class="muted" style="font-size:.82rem">Valor actual registrado en la cuenta</div>
@@ -211,18 +214,26 @@ interface MovForm {
                   <input class="input" [value]="revalPreview()" disabled />
                 </div>
               } @else {
-                <!-- Ingreso / Gasto -->
+                <!-- Row 3: Monto | Divisa -->
                 <div class="field">
                   <label>Monto</label>
                   <input class="input" type="number" step="any" [(ngModel)]="form().monto" placeholder="0" />
                 </div>
                 <div class="field">
+                  <label>Divisa</label>
+                  <select class="select" [(ngModel)]="form().divisa_id">
+                    @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
+                  </select>
+                </div>
+                <!-- Row 4: Instrumento (full-width) -->
+                <div class="field" style="grid-column:1 / -1">
                   <label>Instrumento (opcional)</label>
                   <select class="select" [(ngModel)]="form().instrumento_id">
                     <option [ngValue]="null">— Ninguno —</option>
                     @for (ins of instrumentos(); track ins.id) { <option [ngValue]="ins.id">{{ ins.nombre }}</option> }
                   </select>
                 </div>
+                <!-- Row 5: Cantidad | Precio unitario -->
                 <div class="field">
                   <label>Cantidad (títulos, opcional)</label>
                   <input class="input" type="number" step="any" [(ngModel)]="form().cantidad" placeholder="0" />
@@ -233,6 +244,7 @@ interface MovForm {
                 </div>
               }
 
+              <!-- Row 6: Descripción (full-width) -->
               <div class="field" style="grid-column:1 / -1">
                 <label>Descripción</label>
                 <textarea class="textarea" [(ngModel)]="form().descripcion" placeholder="Texto libre"></textarea>
