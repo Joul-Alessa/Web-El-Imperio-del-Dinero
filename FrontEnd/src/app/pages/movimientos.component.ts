@@ -177,7 +177,8 @@ interface MovForm {
               <!-- Row 2: Persona | Cuenta -->
               <div class="field">
                 <label>Persona</label>
-                <select class="select" [(ngModel)]="form().persona_id">
+                <select class="select" [ngModel]="form().persona_id" (ngModelChange)="onPersonaChange($event)">
+                  <option [ngValue]="null" disabled>Selecciona…</option>
                   @for (p of personas(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
                 </select>
               </div>
@@ -185,7 +186,7 @@ interface MovForm {
                 <label>Cuenta</label>
                 <select class="select" [ngModel]="form().cuenta_id" (ngModelChange)="onCuentaChange($event)">
                   <option [ngValue]="null" disabled>Selecciona…</option>
-                  @for (c of cuentas(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }} ({{ c.divisa_codigo }})</option> }
+                  @for (c of cuentasFiltradas(); track c.id) { <option [ngValue]="c.id">{{ cuentaLabel(c) }}</option> }
                 </select>
               </div>
 
@@ -194,6 +195,7 @@ interface MovForm {
                 <div class="field" style="grid-column:1 / -1">
                   <label>Divisa</label>
                   <select class="select" [(ngModel)]="form().divisa_id">
+                    <option [ngValue]="null" disabled>Selecciona…</option>
                     @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
                   </select>
                 </div>
@@ -222,6 +224,7 @@ interface MovForm {
                 <div class="field">
                   <label>Divisa</label>
                   <select class="select" [(ngModel)]="form().divisa_id">
+                    <option [ngValue]="null" disabled>Selecciona…</option>
                     @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
                   </select>
                 </div>
@@ -279,6 +282,13 @@ export class MovimientosComponent implements OnInit {
   fHasta: string | null = null;
 
   selectedCuenta = computed(() => this.cuentas().find((c) => c.id === this.form().cuenta_id));
+
+  // If a persona is selected, only her cuentas show; otherwise all of them.
+  cuentasFiltradas = computed(() => {
+    const pid = this.form().persona_id;
+    if (pid == null) return this.cuentas();
+    return this.cuentas().filter((c) => c.persona_id === pid);
+  });
 
   totalIngresos = computed(() => this.sum('ingreso'));
   totalGastos = computed(() => this.sum('gasto'));
@@ -363,6 +373,26 @@ export class MovimientosComponent implements OnInit {
       persona_id: cuenta?.persona_id ?? f.persona_id,
       divisa_id: cuenta?.divisa_id ?? f.divisa_id,
     }));
+  }
+
+  onPersonaChange(id: number | null) {
+    this.form.update((f) => {
+      // If the selected cuenta doesn't belong to the new persona, drop it (and its divisa).
+      const currentCuenta = this.cuentas().find((c) => c.id === f.cuenta_id);
+      const keepCuenta = !currentCuenta || id == null || currentCuenta.persona_id === id;
+      return {
+        ...f,
+        persona_id: id,
+        cuenta_id: keepCuenta ? f.cuenta_id : null,
+        divisa_id: keepCuenta ? f.divisa_id : null,
+      };
+    });
+  }
+
+  cuentaLabel(c: Cuenta): string {
+    // Prefix with persona name only when the persona filter is empty (to disambiguate).
+    const prefix = this.form().persona_id == null ? `(${c.persona_nombre}) ` : '';
+    return `${prefix}${c.nombre} (${c.divisa_codigo})`;
   }
 
   revalPreview(): string {
