@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
     query.where('m.divisa_id', req.query.divisa_id);
   }
 
-  query.orderBy('m.fecha', 'desc');
+  query.orderBy('m.fecha', 'desc').orderBy('m.id', 'desc');
 
   const rows = await query;
   res.json(rows);
