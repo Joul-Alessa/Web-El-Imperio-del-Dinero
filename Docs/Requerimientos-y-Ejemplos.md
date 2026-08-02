@@ -122,7 +122,7 @@ Supuestos:
 - institución: Plata Card
 
 #### Movimiento 1 — salida de MXN
-- persona: Joul  
+- persona: Alex  
 - cuenta: Ahorro Inteligente (Plata Card)  
 - tipo: inversión_compra  
 - monto: 90 MXN  
@@ -130,7 +130,7 @@ Supuestos:
 - descripción: “Transferencia para compra de NVIDIA (equivalente a 5 USD)”
 
 #### Movimiento 2 — compra de NVIDIA
-- persona: Joul  
+- persona: Alex  
 - cuenta: NVIDIA en Plata Card  
 - tipo: inversión_compra  
 - monto: 5 USD  

@@ -115,7 +115,7 @@ Registra ingresos, gastos, transferencias e inversiones.
 ### Movimiento 1 — salida de MXN desde Ahorro Inteligente
 | Campo | Valor |
 |-------|--------|
-| persona_id | Joul |
+| persona_id | Alex |
 | cuenta_id | Ahorro Inteligente |
 | tipo | inversión_compra |
 | monto | 90 |
@@ -125,7 +125,7 @@ Registra ingresos, gastos, transferencias e inversiones.
 ### Movimiento 2 — compra de NVIDIA en Plata Card
 | Campo | Valor |
 |-------|--------|
-| persona_id | Joul |
+| persona_id | Alex |
 | cuenta_id | NVIDIA en Plata Card |
 | tipo | inversión_compra |
 | monto | 5 |
