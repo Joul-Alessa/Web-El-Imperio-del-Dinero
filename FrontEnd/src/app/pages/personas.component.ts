@@ -57,7 +57,7 @@ import { Persona } from '../core/models';
           <div class="modal-body">
             <div class="field">
               <label>Nombre</label>
-              <input class="input" [(ngModel)]="editing().nombre" placeholder="Ej. Alex" />
+              <input class="input" [(ngModel)]="editing().nombre" placeholder="Ej. Kirby" />
             </div>
           </div>
           <div class="modal-footer">

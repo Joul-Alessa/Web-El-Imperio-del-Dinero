@@ -35,7 +35,7 @@ import { Institucion } from '../core/models';
                 <tr>
                   <td class="muted">#{{ i.id }}</td>
                   <td><strong>{{ i.nombre }}</strong></td>
-                  <td><span class="badge">{{ i.tipo }}</span></td>
+                  <td><span class="badge">{{ tipoLabels[i.tipo] || i.tipo }}</span></td>
                   <td class="actions">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(i)">✏️ Editar</button>
                     <button class="btn btn-sm btn-danger" (click)="remove(i)">🗑️</button>
@@ -86,6 +86,13 @@ export class InstitucionesComponent implements OnInit {
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Institucion>({ nombre: '', tipo: 'banco' });
+
+  readonly tipoLabels: Record<string, string> = {
+    banco: 'Banco',
+    fintech: 'Fintech',
+    broker: 'Broker',
+    gobierno: 'Gobierno',
+  };
 
   constructor(private api: ApiService) {}
 
