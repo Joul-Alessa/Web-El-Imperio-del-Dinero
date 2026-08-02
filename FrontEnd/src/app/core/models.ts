@@ -34,7 +34,7 @@ export type TipoCuenta = 'efectivo' | 'débito' | 'crédito' | 'apartado' | 'inv
 export interface Cuenta {
   id?: number;
   persona_id: number;
-  institucion_id: number;
+  institucion_id: number | null;
   tipo: string;
   instrumento_id?: number | null;
   divisa_id: number;

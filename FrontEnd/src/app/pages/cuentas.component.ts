@@ -5,6 +5,13 @@ import { ApiService } from '../services/api.service';
 import { Cuenta, Persona, Institucion, Divisa, Instrumento } from '../core/models';
 
 const TIPOS_CUENTA = ['efectivo', 'débito', 'crédito', 'apartado', 'inversión'];
+const TIPO_CUENTA_LABELS: Record<string, string> = {
+  'efectivo': 'Efectivo',
+  'débito': 'Débito',
+  'crédito': 'Crédito',
+  'apartado': 'Apartado',
+  'inversión': 'Inversión',
+};
 
 @Component({
   selector: 'app-cuentas',
@@ -40,7 +47,7 @@ const TIPOS_CUENTA = ['efectivo', 'débito', 'crédito', 'apartado', 'inversión
           <label>Tipo</label>
           <select class="select" [(ngModel)]="fTipo" (ngModelChange)="load()">
             <option [ngValue]="null">Todos</option>
-            @for (t of tipos; track t) { <option [ngValue]="t">{{ t }}</option> }
+            @for (t of tipos; track t) { <option [ngValue]="t">{{ tipoLabels[t] }}</option> }
           </select>
         </div>
         <div class="field">
@@ -77,8 +84,8 @@ const TIPOS_CUENTA = ['efectivo', 'débito', 'crédito', 'apartado', 'inversión
                 <tr>
                   <td><strong>{{ c.nombre }}</strong>@if (c.plazo) { <div class="muted" style="font-size:.8rem">Plazo: {{ c.plazo }}</div> }</td>
                   <td>{{ c.persona_nombre }}</td>
-                  <td>{{ c.institucion_nombre }}</td>
-                  <td><span class="badge">{{ c.tipo }}</span></td>
+                  <td>{{ c.institucion_nombre || '—' }}</td>
+                  <td><span class="badge">{{ tipoLabels[c.tipo] || c.tipo }}</span></td>
                   <td>{{ c.instrumento_nombre || '—' }}</td>
                   <td><span class="badge badge-primary">{{ c.divisa_codigo }}</span></td>
                   <td class="num">{{ c.valor_actual != null ? (c.divisa_simbolo + ' ' + fmt(c.valor_actual)) : '—' }}</td>
@@ -116,13 +123,14 @@ const TIPOS_CUENTA = ['efectivo', 'débito', 'crédito', 'apartado', 'inversión
               <div class="field">
                 <label>Institución</label>
                 <select class="select" [(ngModel)]="editing().institucion_id">
+                  <option [ngValue]="null">— Ninguna —</option>
                   @for (i of instituciones(); track i.id) { <option [ngValue]="i.id">{{ i.nombre }}</option> }
                 </select>
               </div>
               <div class="field">
                 <label>Tipo de cuenta</label>
                 <select class="select" [(ngModel)]="editing().tipo">
-                  @for (t of tipos; track t) { <option [ngValue]="t">{{ t }}</option> }
+                  @for (t of tipos; track t) { <option [ngValue]="t">{{ tipoLabels[t] }}</option> }
                 </select>
               </div>
               <div class="field">
@@ -205,9 +213,11 @@ export class CuentasComponent implements OnInit {
     });
   }
 
+  readonly tipoLabels = TIPO_CUENTA_LABELS;
+
   blank(): Cuenta {
     return {
-      persona_id: undefined as any, institucion_id: undefined as any, tipo: 'efectivo',
+      persona_id: undefined as any, institucion_id: null, tipo: 'efectivo',
       instrumento_id: null, divisa_id: undefined as any, nombre: '',
       plazo: null, cantidad: null, valor_compra: null, valor_actual: null, descripcion: null,
     };
@@ -234,7 +244,6 @@ export class CuentasComponent implements OnInit {
   openCreate() {
     const b = this.blank();
     b.persona_id = this.personas()[0]?.id as any;
-    b.institucion_id = this.instituciones()[0]?.id as any;
     b.divisa_id = this.divisas()[0]?.id as any;
     this.editing.set(b);
     this.showForm.set(true);
@@ -244,7 +253,7 @@ export class CuentasComponent implements OnInit {
 
   isValid(): boolean {
     const c = this.editing();
-    return !!(c.nombre && c.persona_id && c.institucion_id && c.tipo && c.divisa_id);
+    return !!(c.nombre && c.persona_id && c.tipo && c.divisa_id);
   }
 
   save() {

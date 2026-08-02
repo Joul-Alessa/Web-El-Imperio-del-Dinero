@@ -6,7 +6,7 @@ function baseQuery() {
     .join('personas as p', 'm.persona_id', 'p.id')
     .join('cuentas_financieras as c', 'm.cuenta_id', 'c.id')
     .join('divisas as d', 'm.divisa_id', 'd.id')
-    .join('instituciones as inst', 'c.institucion_id', 'inst.id')
+    .leftJoin('instituciones as inst', 'c.institucion_id', 'inst.id')
     .leftJoin('instrumentos_financieros as instr', 'm.instrumento_id', 'instr.id')
     .select(
       'm.*',

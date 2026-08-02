@@ -4,7 +4,7 @@ const db = require('../db/knex');
 function baseQuery() {
   return db('cuentas_financieras as c')
     .join('personas as p', 'c.persona_id', 'p.id')
-    .join('instituciones as inst', 'c.institucion_id', 'inst.id')
+    .leftJoin('instituciones as inst', 'c.institucion_id', 'inst.id')
     .join('divisas as d', 'c.divisa_id', 'd.id')
     .leftJoin('instrumentos_financieros as instr', 'c.instrumento_id', 'instr.id')
     .select(
