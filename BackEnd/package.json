@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "migrate": "knex migrate:latest",
     "migrate:rollback": "knex migrate:rollback",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,6 +13,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "knex": "^3.3.0",
     "sqlite3": "^6.0.1"
   }
