@@ -140,30 +140,32 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
                 </select>
               </div>
 
-              <div class="field" style="grid-column: 1 / -1">
-                <label>Instrumento (solo cuentas de inversión)</label>
-                <select class="select" [(ngModel)]="editing().instrumento_id">
-                  <option [ngValue]="null">— Ninguno —</option>
-                  @for (ins of instrumentos(); track ins.id) { <option [ngValue]="ins.id">{{ ins.nombre }}</option> }
-                </select>
-              </div>
+              @if (esInversion()) {
+                <div class="field" style="grid-column: 1 / -1">
+                  <label>Instrumento (solo cuentas de inversión)</label>
+                  <select class="select" [(ngModel)]="editing().instrumento_id">
+                    <option [ngValue]="null">— Ninguno —</option>
+                    @for (ins of instrumentos(); track ins.id) { <option [ngValue]="ins.id">{{ ins.nombre }}</option> }
+                  </select>
+                </div>
 
-              <div class="field">
-                <label>Plazo</label>
-                <input class="input" [(ngModel)]="editing().plazo" placeholder="Ej. 1 mes, 2 años" />
-              </div>
-              <div class="field">
-                <label>Cantidad (títulos)</label>
-                <input class="input" type="number" step="any" [(ngModel)]="editing().cantidad" placeholder="0" />
-              </div>
-              <div class="field">
-                <label>Valor de compra</label>
-                <input class="input" type="number" step="any" [(ngModel)]="editing().valor_compra" placeholder="0" />
-              </div>
-              <div class="field">
-                <label>Valor actual</label>
-                <input class="input" type="number" step="any" [(ngModel)]="editing().valor_actual" placeholder="0" />
-              </div>
+                <div class="field">
+                  <label>Plazo</label>
+                  <input class="input" [(ngModel)]="editing().plazo" placeholder="Ej. 1 mes, 2 años" />
+                </div>
+                <div class="field">
+                  <label>Cantidad (títulos)</label>
+                  <input class="input" type="number" step="any" [(ngModel)]="editing().cantidad" placeholder="0" />
+                </div>
+                <div class="field">
+                  <label>Valor de compra</label>
+                  <input class="input" type="number" step="any" [(ngModel)]="editing().valor_compra" placeholder="0" />
+                </div>
+                <div class="field">
+                  <label>Valor actual</label>
+                  <input class="input" type="number" step="any" [(ngModel)]="editing().valor_actual" placeholder="0" />
+                </div>
+              }
               <div class="field" style="grid-column: 1 / -1">
                 <label>Descripción</label>
                 <textarea class="textarea" [(ngModel)]="editing().descripcion" placeholder="Opcional"></textarea>
@@ -214,6 +216,10 @@ export class CuentasComponent implements OnInit {
   }
 
   readonly tipoLabels = TIPO_CUENTA_LABELS;
+
+  esInversion(): boolean {
+    return this.editing().tipo === 'inversión';
+  }
 
   blank(): Cuenta {
     return {

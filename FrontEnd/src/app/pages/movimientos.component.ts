@@ -229,6 +229,7 @@ interface MovForm {
                   </select>
                 </div>
                 <!-- Row 4: Instrumento (full-width) -->
+                @if (esInversion()) {
                 <div class="field" style="grid-column:1 / -1">
                   <label>Instrumento (opcional)</label>
                   <select class="select" [(ngModel)]="form().instrumento_id">
@@ -245,6 +246,7 @@ interface MovForm {
                   <label>Precio unitario (opcional)</label>
                   <input class="input" type="number" step="any" [(ngModel)]="form().precio_unitario" placeholder="0" />
                 </div>
+                }
               }
 
               <!-- Row 6: Descripción (full-width) -->
@@ -282,6 +284,8 @@ export class MovimientosComponent implements OnInit {
   fHasta: string | null = null;
 
   selectedCuenta = computed(() => this.cuentas().find((c) => c.id === this.form().cuenta_id));
+
+  esInversion = computed(() => this.selectedCuenta()?.tipo === 'inversión');
 
   // If a persona is selected, only her cuentas show; otherwise all of them.
   cuentasFiltradas = computed(() => {
