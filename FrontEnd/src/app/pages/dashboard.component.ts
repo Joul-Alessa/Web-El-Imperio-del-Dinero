@@ -276,8 +276,11 @@ export class DashboardComponent implements OnInit {
       (this.fInstitucion == null || m.institucion_nombre === this.instituciones().find(i => i.id === this.fInstitucion)?.nombre) &&
       (this.fTipo == null || m.tipo === this.fTipo);
 
-    const inRange = (m: Movimiento) =>
-      (!this.fDesde || m.fecha >= this.fDesde) && (!this.fHasta || m.fecha <= this.fHasta);
+    // m.fecha is a datetime string ("YYYY-MM-DDTHH:MM:SS"); compare by date-only slice.
+    const inRange = (m: Movimiento) => {
+      const d = m.fecha.slice(0, 10);
+      return (!this.fDesde || d >= this.fDesde) && (!this.fHasta || d <= this.fHasta);
+    };
 
     const base = this.movimientos().filter(passNonDate);
     const filtered = base.filter(inRange);
@@ -310,14 +313,17 @@ export class DashboardComponent implements OnInit {
   }
 
   private buildLine(base: Movimiento[], filtered: Movimiento[], colors: any, scales: any) {
-    // net per date
+    // net per date-only (strip the time component so all movements on the same day group).
     const byDate = new Map<string, number>();
-    for (const m of filtered) byDate.set(m.fecha, (byDate.get(m.fecha) ?? 0) + this.net(m));
+    for (const m of filtered) {
+      const d = m.fecha.slice(0, 10);
+      byDate.set(d, (byDate.get(d) ?? 0) + this.net(m));
+    }
     const dates = [...byDate.keys()].sort();
 
     let running = 0;
     if (this.arrastrar && this.fDesde) {
-      running = base.filter(m => m.fecha < this.fDesde!).reduce((a, m) => a + this.net(m), 0);
+      running = base.filter(m => m.fecha.slice(0, 10) < this.fDesde!).reduce((a, m) => a + this.net(m), 0);
     }
     const acc: number[] = [];
     for (const d of dates) { running += byDate.get(d)!; acc.push(running); }

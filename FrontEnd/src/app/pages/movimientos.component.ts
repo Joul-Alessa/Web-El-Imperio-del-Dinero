@@ -10,6 +10,7 @@ interface MovForm {
   id?: number;
   tipo: string;
   fecha: string;
+  hora: string;
   persona_id: number | null;
   cuenta_id: number | null;
   monto: number | null;
@@ -110,7 +111,10 @@ interface MovForm {
             <tbody>
               @for (m of movimientos(); track m.id) {
                 <tr>
-                  <td class="muted">{{ m.fecha }}</td>
+                  <td class="muted">
+                    {{ fmtFecha(m.fecha) }}
+                    <div style="font-size:.78rem">{{ fmtHora(m.fecha) }}</div>
+                  </td>
                   <td>
                     <span class="badge"
                       [class.badge-primary]="m.tipo === 'ingreso'"
@@ -162,8 +166,11 @@ interface MovForm {
 
             <div class="form-grid">
               <div class="field">
-                <label>Fecha</label>
-                <input class="input" type="date" [(ngModel)]="form().fecha" />
+                <label>Fecha y hora</label>
+                <div class="flex gap-8">
+                  <input class="input" type="date" [ngModel]="form().fecha" (ngModelChange)="setFecha($event)" style="flex:2" />
+                  <input class="input" type="time" [ngModel]="form().hora" (ngModelChange)="setHora($event)" style="flex:1" />
+                </div>
               </div>
               <div class="field">
                 <label>Cuenta</label>
@@ -288,12 +295,26 @@ export class MovimientosComponent implements OnInit {
 
   blank(): MovForm {
     return {
-      tipo: 'ingreso', fecha: new Date().toISOString().slice(0, 10),
+      tipo: 'ingreso', fecha: new Date().toISOString().slice(0, 10), hora: '00:00',
       persona_id: null, cuenta_id: null, monto: null, divisa_id: null,
       instrumento_id: null, cantidad: null, precio_unitario: null,
       descripcion: null, valor_actual_nuevo: null,
     };
   }
+
+  private splitDateTime(dt: string): { fecha: string; hora: string } {
+    // Accepts "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM(:SS)?".
+    if (dt.includes('T')) return { fecha: dt.slice(0, 10), hora: dt.slice(11, 16) };
+    return { fecha: dt, hora: '00:00' };
+  }
+
+  private joinDateTime(fecha: string, hora: string): string {
+    // "YYYY-MM-DDTHH:MM:00" — always seconds so string comparisons are consistent.
+    return `${fecha}T${hora || '00:00'}:00`;
+  }
+
+  setFecha(v: string) { this.form.update((f) => ({ ...f, fecha: v })); }
+  setHora(v: string) { this.form.update((f) => ({ ...f, hora: v || '00:00' })); }
 
   load() {
     this.loading.set(true);
@@ -303,7 +324,7 @@ export class MovimientosComponent implements OnInit {
       institucion_id: this.fInstitucion ? [this.fInstitucion] : undefined,
       tipo: this.fTipo ?? undefined,
       fecha_desde: this.fDesde ?? undefined,
-      fecha_hasta: this.fHasta ?? undefined,
+      fecha_hasta: this.fHasta ? `${this.fHasta}T23:59:59` : undefined,
     }).subscribe({
       next: (d) => { this.movimientos.set(d); this.loading.set(false); },
       error: () => this.loading.set(false),
@@ -344,8 +365,9 @@ export class MovimientosComponent implements OnInit {
   openCreate() { this.form.set(this.blank()); this.showForm.set(true); }
 
   openEdit(m: Movimiento) {
+    const { fecha, hora } = this.splitDateTime(m.fecha);
     this.form.set({
-      id: m.id, tipo: m.tipo, fecha: m.fecha, persona_id: m.persona_id, cuenta_id: m.cuenta_id,
+      id: m.id, tipo: m.tipo, fecha, hora, persona_id: m.persona_id, cuenta_id: m.cuenta_id,
       monto: Number(m.monto), divisa_id: m.divisa_id, instrumento_id: m.instrumento_id ?? null,
       cantidad: m.cantidad ?? null, precio_unitario: m.precio_unitario ?? null,
       descripcion: m.descripcion ?? null, valor_actual_nuevo: null,
@@ -364,13 +386,14 @@ export class MovimientosComponent implements OnInit {
 
   save() {
     const f = this.form();
+    const fechaCompleta = this.joinDateTime(f.fecha, f.hora);
 
     if (f.tipo === 'revalorizacion') {
       const payload: RevalorizacionPayload = {
         tipo: 'revalorizacion',
         cuenta_id: f.cuenta_id!,
         valor_actual_nuevo: Number(f.valor_actual_nuevo),
-        fecha: f.fecha,
+        fecha: fechaCompleta,
         persona_id: f.persona_id!,
         divisa_id: f.divisa_id ?? undefined,
         descripcion: f.descripcion ?? undefined,
@@ -380,7 +403,7 @@ export class MovimientosComponent implements OnInit {
     }
 
     const mov: Movimiento = {
-      fecha: f.fecha, persona_id: f.persona_id!, cuenta_id: f.cuenta_id!, tipo: f.tipo,
+      fecha: fechaCompleta, persona_id: f.persona_id!, cuenta_id: f.cuenta_id!, tipo: f.tipo,
       monto: Number(f.monto), divisa_id: f.divisa_id!, instrumento_id: f.instrumento_id,
       cantidad: f.cantidad, precio_unitario: f.precio_unitario, descripcion: f.descripcion,
     };
@@ -412,4 +435,7 @@ export class MovimientosComponent implements OnInit {
   fmt(n: number): string {
     return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+
+  fmtFecha(dt: string): string { return this.splitDateTime(dt).fecha; }
+  fmtHora(dt: string): string { return this.splitDateTime(dt).hora; }
 }
