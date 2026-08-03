@@ -11,6 +11,7 @@ app.use('/api/divisas', require('./routes/divisas'));
 app.use('/api/instrumentos', require('./routes/instrumentos'));
 app.use('/api/cuentas', require('./routes/cuentas'));
 app.use('/api/movimientos', require('./routes/movimientos'));
+app.use('/api/historial', require('./routes/historial'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

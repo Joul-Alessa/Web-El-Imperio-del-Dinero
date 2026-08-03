@@ -102,6 +102,22 @@ export interface MovimientoFiltros {
   divisa_id?: number | string;
 }
 
+export interface Historial {
+  id: number;
+  fecha: string;
+  entidad: string;
+  entidad_id: number;
+  accion: string;
+  detalle: any;
+}
+
+export interface HistorialFiltros {
+  limit?: number;
+  offset?: number;
+  entidad?: string;
+  accion?: string;
+}
+
 export interface CuentaFiltros {
   persona_id?: (number | string)[];
   institucion_id?: (number | string)[];

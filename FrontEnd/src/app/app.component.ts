@@ -26,6 +26,7 @@ export class AppComponent {
     { path: '/divisas', label: 'Divisas', icon: '💱' },
     { path: '/instituciones', label: 'Instituciones', icon: '🏛️' },
     { path: '/personas', label: 'Personas', icon: '👤' },
+    { path: '/historial', label: 'Historial', icon: '📜' },
   ];
 
   constructor(public theme: ThemeService) {}

@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const db = require('../db/knex');
+const registrarHistorial = require('../db/registrarHistorial');
 
 function baseQuery() {
   return db('movimientos as m')
@@ -119,6 +120,7 @@ router.post('/', async (req, res) => {
     const result = await resolveRevalorizacion(req.body);
     if (result.error) return res.status(result.error.status).json({ error: result.error.message });
     const [id] = await db('movimientos').insert(result.row);
+    await registrarHistorial('movimientos', id, 'creado', { id, ...result.row });
     return res.status(201).json({
       id, tipo: result.row.tipo, monto: result.row.monto,
       valor_anterior: result.valorAnterior, valor_actual_nuevo: req.body.valor_actual_nuevo,
@@ -134,6 +136,7 @@ router.post('/', async (req, res) => {
     fecha, persona_id, cuenta_id, tipo, monto, divisa_id,
     instrumento_id, cantidad, precio_unitario, descripcion,
   });
+  await registrarHistorial('movimientos', id, 'creado', { id, ...req.body });
 
   res.status(201).json({ id, ...req.body });
 });
@@ -146,6 +149,7 @@ router.put('/:id', async (req, res) => {
     if (result.error) return res.status(result.error.status).json({ error: result.error.message });
     const count = await db('movimientos').where('id', req.params.id).update(result.row);
     if (!count) return res.status(404).json({ error: 'Movimiento no encontrado' });
+    await registrarHistorial('movimientos', Number(req.params.id), 'editado', { id: Number(req.params.id), ...result.row });
     return res.json({
       id: Number(req.params.id), tipo: result.row.tipo, monto: result.row.monto,
       valor_anterior: result.valorAnterior, valor_actual_nuevo: req.body.valor_actual_nuevo,
@@ -161,12 +165,15 @@ router.put('/:id', async (req, res) => {
     instrumento_id, cantidad, precio_unitario, descripcion,
   });
   if (!count) return res.status(404).json({ error: 'Movimiento no encontrado' });
+  await registrarHistorial('movimientos', Number(req.params.id), 'editado', { id: Number(req.params.id), ...req.body });
   res.json({ id: Number(req.params.id), ...req.body });
 });
 
 router.delete('/:id', async (req, res) => {
-  const count = await db('movimientos').where('id', req.params.id).del();
-  if (!count) return res.status(404).json({ error: 'Movimiento no encontrado' });
+  const row = await db('movimientos').where('id', req.params.id).first();
+  if (!row) return res.status(404).json({ error: 'Movimiento no encontrado' });
+  await db('movimientos').where('id', req.params.id).del();
+  await registrarHistorial('movimientos', row.id, 'eliminado', row);
   res.json({ message: 'Eliminado' });
 });
 

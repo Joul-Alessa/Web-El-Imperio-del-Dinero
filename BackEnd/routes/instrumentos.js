@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const db = require('../db/knex');
+const registrarHistorial = require('../db/registrarHistorial');
 
 router.get('/', async (req, res) => {
   const rows = await db('instrumentos_financieros as i')
@@ -32,6 +33,7 @@ router.post('/', async (req, res) => {
     nombre, tipo, riesgo, divisa_base_id, institucion_origen,
     metadata: metadata ? JSON.stringify(metadata) : null,
   });
+  await registrarHistorial('instrumentos', id, 'creado', { id, nombre, tipo, riesgo, divisa_base_id, institucion_origen, metadata });
   res.status(201).json({ id, nombre, tipo, riesgo, divisa_base_id, institucion_origen, metadata });
 });
 
@@ -41,12 +43,15 @@ router.put('/:id', async (req, res) => {
   if (metadata !== undefined) data.metadata = JSON.stringify(metadata);
   const count = await db('instrumentos_financieros').where('id', req.params.id).update(data);
   if (!count) return res.status(404).json({ error: 'Instrumento no encontrado' });
+  await registrarHistorial('instrumentos', Number(req.params.id), 'editado', { id: Number(req.params.id), ...data });
   res.json({ id: Number(req.params.id), ...data });
 });
 
 router.delete('/:id', async (req, res) => {
-  const count = await db('instrumentos_financieros').where('id', req.params.id).del();
-  if (!count) return res.status(404).json({ error: 'Instrumento no encontrado' });
+  const row = await db('instrumentos_financieros').where('id', req.params.id).first();
+  if (!row) return res.status(404).json({ error: 'Instrumento no encontrado' });
+  await db('instrumentos_financieros').where('id', req.params.id).del();
+  await registrarHistorial('instrumentos', row.id, 'eliminado', row);
   res.json({ message: 'Eliminado' });
 });
 

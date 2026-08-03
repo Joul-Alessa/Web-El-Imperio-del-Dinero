@@ -30,5 +30,9 @@ export const routes: Routes = [
     path: 'personas',
     loadComponent: () => import('./pages/personas.component').then((m) => m.PersonasComponent),
   },
+  {
+    path: 'historial',
+    loadComponent: () => import('./pages/historial.component').then((m) => m.HistorialComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

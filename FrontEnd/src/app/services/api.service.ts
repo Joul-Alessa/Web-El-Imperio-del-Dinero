@@ -5,6 +5,7 @@ import { API_URL } from '../core/api.config';
 import {
   Persona, Institucion, Divisa, Instrumento, Cuenta, Movimiento,
   RevalorizacionPayload, MovimientoFiltros, CuentaFiltros,
+  Historial, HistorialFiltros,
 } from '../core/models';
 
 @Injectable({ providedIn: 'root' })
@@ -75,4 +76,9 @@ export class ApiService {
   createMovimiento(m: Movimiento | RevalorizacionPayload) { return this.http.post<any>(`${API_URL}/movimientos`, m); }
   updateMovimiento(id: number, m: Movimiento | RevalorizacionPayload) { return this.http.put<any>(`${API_URL}/movimientos/${id}`, m); }
   deleteMovimiento(id: number) { return this.http.delete(`${API_URL}/movimientos/${id}`); }
+
+  // ---------- Historial ----------
+  getHistorial(filtros: HistorialFiltros = {}): Observable<Historial[]> {
+    return this.http.get<Historial[]>(`${API_URL}/historial`, { params: this.buildParams(filtros) });
+  }
 }

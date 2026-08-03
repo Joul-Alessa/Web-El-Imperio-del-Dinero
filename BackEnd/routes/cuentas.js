@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const db = require('../db/knex');
+const registrarHistorial = require('../db/registrarHistorial');
 
 function baseQuery() {
   return db('cuentas_financieras as c')
@@ -76,6 +77,7 @@ router.post('/', async (req, res) => {
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
     nombre, plazo, cantidad, valor_compra, valor_actual, descripcion,
   });
+  await registrarHistorial('cuentas', id, 'creado', { id, ...req.body });
   res.status(201).json({ id, ...req.body });
 });
 
@@ -90,12 +92,15 @@ router.put('/:id', async (req, res) => {
     activo: activo === undefined ? undefined : Number(activo),
   });
   if (!count) return res.status(404).json({ error: 'Cuenta no encontrada' });
+  await registrarHistorial('cuentas', Number(req.params.id), 'editado', { id: Number(req.params.id), ...req.body });
   res.json({ id: Number(req.params.id), ...req.body });
 });
 
 router.delete('/:id', async (req, res) => {
-  const count = await db('cuentas_financieras').where('id', req.params.id).del();
-  if (!count) return res.status(404).json({ error: 'Cuenta no encontrada' });
+  const row = await db('cuentas_financieras').where('id', req.params.id).first();
+  if (!row) return res.status(404).json({ error: 'Cuenta no encontrada' });
+  await db('cuentas_financieras').where('id', req.params.id).del();
+  await registrarHistorial('cuentas', row.id, 'eliminado', row);
   res.json({ message: 'Eliminada' });
 });
 
