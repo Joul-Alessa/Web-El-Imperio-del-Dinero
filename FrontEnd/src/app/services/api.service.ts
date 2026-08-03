@@ -57,6 +57,13 @@ export class ApiService {
     return this.http.get<Cuenta[]>(`${API_URL}/cuentas`, { params: this.buildParams(filtros) });
   }
   getCuenta(id: number) { return this.http.get<Cuenta>(`${API_URL}/cuentas/${id}`); }
+  getCuentaBalance(id: number, fecha: string, excludeMovimientoId?: number) {
+    const params: Record<string, any> = { fecha };
+    if (excludeMovimientoId != null) params['excludeMovimientoId'] = excludeMovimientoId;
+    return this.http.get<{ balance: number }>(`${API_URL}/cuentas/${id}/balance`, {
+      params: this.buildParams(params),
+    });
+  }
   createCuenta(c: Cuenta) { return this.http.post<Cuenta>(`${API_URL}/cuentas`, c); }
   updateCuenta(id: number, c: Cuenta) { return this.http.put<Cuenta>(`${API_URL}/cuentas/${id}`, c); }
   deleteCuenta(id: number) { return this.http.delete(`${API_URL}/cuentas/${id}`); }
@@ -66,6 +73,6 @@ export class ApiService {
     return this.http.get<Movimiento[]>(`${API_URL}/movimientos`, { params: this.buildParams(filtros) });
   }
   createMovimiento(m: Movimiento | RevalorizacionPayload) { return this.http.post<any>(`${API_URL}/movimientos`, m); }
-  updateMovimiento(id: number, m: Movimiento) { return this.http.put<Movimiento>(`${API_URL}/movimientos/${id}`, m); }
+  updateMovimiento(id: number, m: Movimiento | RevalorizacionPayload) { return this.http.put<any>(`${API_URL}/movimientos/${id}`, m); }
   deleteMovimiento(id: number) { return this.http.delete(`${API_URL}/movimientos/${id}`); }
 }

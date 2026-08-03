@@ -47,7 +47,6 @@ type GroupDim = 'persona' | 'cuenta' | 'institucion' | 'instrumento' | 'divisa';
             <option [ngValue]="null">Todos</option>
             <option value="ingreso">Ingreso</option>
             <option value="gasto">Gasto</option>
-            <option value="revalorizacion">Revalorización</option>
           </select>
         </div>
         <div class="field">
@@ -264,7 +263,7 @@ export class DashboardComponent implements OnInit {
   private net(m: Movimiento): number {
     const v = Number(m.monto);
     if (m.tipo === 'gasto') return -Math.abs(v);
-    return v; // ingreso positivo, revalorizacion ya viene con signo
+    return v; // ingreso positivo
   }
 
   recompute() {
@@ -349,7 +348,6 @@ export class DashboardComponent implements OnInit {
   private buildBar(filtered: Movimiento[], colors: any, scales: any) {
     const groups = new Map<string, { ing: number; gas: number }>();
     for (const m of filtered) {
-      if (m.tipo === 'revalorizacion') continue;
       const k = this.groupValue(m);
       const g = groups.get(k) ?? { ing: 0, gas: 0 };
       if (m.tipo === 'ingreso') g.ing += Number(m.monto);

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../services/api.service';
@@ -40,16 +40,16 @@ interface MovForm {
       <div class="card filters">
         <div class="field">
           <label>Persona</label>
-          <select class="select" [(ngModel)]="fPersona" (ngModelChange)="load()">
+          <select class="select" [ngModel]="fPersona" (ngModelChange)="onFPersonaChange($event)">
             <option [ngValue]="null">Todas</option>
             @for (p of personas(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
           </select>
         </div>
         <div class="field">
           <label>Cuenta</label>
-          <select class="select" [(ngModel)]="fCuenta" (ngModelChange)="load()">
+          <select class="select" [ngModel]="fCuenta" (ngModelChange)="onFCuentaChange($event)">
             <option [ngValue]="null">Todas</option>
-            @for (c of cuentas(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+            @for (c of cuentasFiltroDisponibles(); track c.id) { <option [ngValue]="c.id">{{ cuentaLabelFiltro(c) }}</option> }
           </select>
         </div>
         <div class="field">
@@ -65,7 +65,6 @@ interface MovForm {
             <option [ngValue]="null">Todos</option>
             <option value="ingreso">Ingreso</option>
             <option value="gasto">Gasto</option>
-            <option value="revalorizacion">Revalorización</option>
           </select>
         </div>
         <div class="field">
@@ -87,7 +86,6 @@ interface MovForm {
         <div class="chip-row" style="margin-bottom:16px">
           <span class="badge badge-primary">Ingresos: {{ fmt(totalIngresos()) }}</span>
           <span class="badge badge-danger">Gastos: {{ fmt(totalGastos()) }}</span>
-          <span class="badge badge-accent">Revalorización neta: {{ fmt(totalReval()) }}</span>
           <span class="badge">{{ movimientos().length }} movimientos</span>
         </div>
       }
@@ -118,8 +116,7 @@ interface MovForm {
                   <td>
                     <span class="badge"
                       [class.badge-primary]="m.tipo === 'ingreso'"
-                      [class.badge-danger]="m.tipo === 'gasto'"
-                      [class.badge-accent]="m.tipo === 'revalorizacion'">
+                      [class.badge-danger]="m.tipo === 'gasto'">
                       {{ label(m.tipo) }}
                     </span>
                   </td>
@@ -131,9 +128,7 @@ interface MovForm {
                     {{ (m.divisa_simbolo || '') }} {{ fmt(signed(m)) }}
                   </td>
                   <td class="actions">
-                    @if (m.tipo !== 'revalorizacion') {
-                      <button class="btn btn-sm btn-ghost" (click)="openEdit(m)">✏️</button>
-                    }
+                    <button class="btn btn-sm btn-ghost" (click)="openEdit(m)">✏️</button>
                     <button class="btn btn-sm btn-danger" (click)="remove(m)">🗑️</button>
                   </td>
                 </tr>
@@ -152,17 +147,20 @@ interface MovForm {
             <button class="btn btn-icon btn-ghost" (click)="close()">✕</button>
           </div>
           <div class="modal-body">
-            <!-- Tipo selector (solo al crear) -->
-            @if (!form().id) {
-              <div class="field" style="margin-bottom:18px">
-                <label>Tipo de movimiento</label>
-                <div class="chip-row">
-                  <button class="btn" [class.btn-primary]="form().tipo === 'ingreso'" (click)="setTipo('ingreso')">💰 Ingreso</button>
-                  <button class="btn" [class.btn-primary]="form().tipo === 'gasto'" (click)="setTipo('gasto')">🛒 Gasto</button>
-                  <button class="btn" [class.btn-primary]="form().tipo === 'revalorizacion'" (click)="setTipo('revalorizacion')">📊 Revalorización</button>
-                </div>
+            <!-- Tipo selector (Revalorización es un atajo que se guarda como ingreso o gasto) -->
+            <div class="field" style="margin-bottom:18px">
+              <label>Tipo de movimiento</label>
+              <div class="chip-row">
+                <button class="btn" [class.btn-primary]="form().tipo === 'ingreso'" (click)="setTipo('ingreso')">💰 Ingreso</button>
+                <button class="btn" [class.btn-primary]="form().tipo === 'gasto'" (click)="setTipo('gasto')">🛒 Gasto</button>
+                <button class="btn" [class.btn-primary]="form().tipo === 'revalorizacion'" (click)="setTipo('revalorizacion')">📊 Revalorización</button>
               </div>
-            }
+              @if (form().tipo === 'revalorizacion') {
+                <div class="muted" style="font-size:.78rem; margin-top:6px">
+                  Atajo: el sistema calculará la diferencia y la guardará como ingreso o gasto.
+                </div>
+              }
+            </div>
 
             <div class="form-grid">
               <!-- Row 1: Fecha y hora (full-width) -->
@@ -190,7 +188,7 @@ interface MovForm {
                 </select>
               </div>
 
-              <!-- Revalorización -->
+              <!-- Revalorización (atajo) -->
               @if (form().tipo === 'revalorizacion') {
                 <div class="field" style="grid-column:1 / -1">
                   <label>Divisa</label>
@@ -201,9 +199,18 @@ interface MovForm {
                 </div>
                 <div class="field" style="grid-column:1 / -1">
                   <div class="card" style="padding:12px 14px; background:var(--surface-2)">
-                    <div class="muted" style="font-size:.82rem">Valor actual registrado en la cuenta</div>
+                    <div class="muted" style="font-size:.82rem">
+                      Valor actual registrado en la cuenta
+                      <span style="font-size:.72rem">(suma de movimientos anteriores a la fecha)</span>
+                    </div>
                     <div style="font-size:1.2rem; font-weight:700">
-                      {{ selectedCuenta() ? (selectedCuenta()!.divisa_simbolo + ' ' + fmt(selectedCuenta()?.valor_actual ?? 0)) : '—' }}
+                      @if (!form().cuenta_id) {
+                        <span class="muted">Elige una cuenta</span>
+                      } @else if (balanceAnterior() === null) {
+                        <span class="muted">Calculando…</span>
+                      } @else {
+                        {{ (selectedCuenta()?.divisa_simbolo ?? '') }} {{ fmt(balanceAnterior() ?? 0) }}
+                      }
                     </div>
                   </div>
                 </div>
@@ -212,7 +219,7 @@ interface MovForm {
                   <input class="input" type="number" step="any" [(ngModel)]="form().valor_actual_nuevo" placeholder="0" />
                 </div>
                 <div class="field">
-                  <label>Ajuste calculado</label>
+                  <label>Ajuste que se registrará</label>
                   <input class="input" [value]="revalPreview()" disabled />
                 </div>
               } @else {
@@ -296,11 +303,28 @@ export class MovimientosComponent implements OnInit {
 
   totalIngresos = computed(() => this.sum('ingreso'));
   totalGastos = computed(() => this.sum('gasto'));
-  totalReval = computed(() =>
-    this.movimientos().filter((m) => m.tipo === 'revalorizacion').reduce((a, m) => a + Number(m.monto), 0)
-  );
 
-  constructor(private api: ApiService) {}
+  // Balance of the selected cuenta before the form's fecha+hora, fetched from
+  // the backend. `null` while pending or before a cuenta is chosen.
+  balanceAnterior = signal<number | null>(null);
+
+  constructor(private api: ApiService) {
+    // Refetch balance whenever cuenta / fecha / hora / tipo / id change (in reval mode).
+    effect(() => {
+      const f = this.form();
+      if (f.tipo !== 'revalorizacion' || !f.cuenta_id || !f.fecha) {
+        this.balanceAnterior.set(null);
+        return;
+      }
+      const fechaCompleta = this.joinDateTime(f.fecha, f.hora);
+      this.balanceAnterior.set(null);
+      this.api.getCuentaBalance(f.cuenta_id, fechaCompleta, f.id)
+        .subscribe({
+          next: (r) => this.balanceAnterior.set(r.balance),
+          error: () => this.balanceAnterior.set(null),
+        });
+    });
+  }
 
   ngOnInit() {
     forkJoin({
@@ -363,6 +387,38 @@ export class MovimientosComponent implements OnInit {
     this.load();
   }
 
+  // Filtro: cuentas visibles en el select "Cuenta". Si hay persona filtrada,
+  // solo sus cuentas; si "Todas", todas.
+  cuentasFiltroDisponibles(): Cuenta[] {
+    if (this.fPersona == null) return this.cuentas();
+    return this.cuentas().filter((c) => c.persona_id === this.fPersona);
+  }
+
+  // Prefijo (persona) solo cuando el filtro de persona está en "Todas".
+  cuentaLabelFiltro(c: Cuenta): string {
+    const prefix = this.fPersona == null ? `(${c.persona_nombre}) ` : '';
+    return `${prefix}${c.nombre}`;
+  }
+
+  onFPersonaChange(id: number | null) {
+    this.fPersona = id;
+    // Si la cuenta seleccionada no pertenece a la nueva persona, limpiar.
+    if (this.fCuenta != null && id != null) {
+      const cuenta = this.cuentas().find((c) => c.id === this.fCuenta);
+      if (cuenta && cuenta.persona_id !== id) this.fCuenta = null;
+    }
+    this.load();
+  }
+
+  onFCuentaChange(id: number | null) {
+    this.fCuenta = id;
+    if (id != null) {
+      const cuenta = this.cuentas().find((c) => c.id === id);
+      if (cuenta) this.fPersona = cuenta.persona_id;
+    }
+    this.load();
+  }
+
   sum(tipo: string): number {
     return this.movimientos().filter((m) => m.tipo === tipo).reduce((a, m) => a + Number(m.monto), 0);
   }
@@ -401,11 +457,11 @@ export class MovimientosComponent implements OnInit {
 
   revalPreview(): string {
     const f = this.form();
-    const cuenta = this.selectedCuenta();
-    if (!cuenta || f.valor_actual_nuevo == null) return '—';
-    const delta = Number(f.valor_actual_nuevo) - Number(cuenta.valor_actual ?? 0);
-    const sign = delta >= 0 ? '+' : '';
-    return `${sign}${this.fmt(delta)}`;
+    const balance = this.balanceAnterior();
+    if (balance === null || f.valor_actual_nuevo == null) return '—';
+    const delta = Number(f.valor_actual_nuevo) - balance;
+    if (delta === 0) return '± 0 (sin cambio)';
+    return `${delta > 0 ? 'Ingreso ' : 'Gasto '}${this.fmt(Math.abs(delta))}`;
   }
 
   openCreate() { this.form.set(this.blank()); this.showForm.set(true); }
@@ -445,7 +501,13 @@ export class MovimientosComponent implements OnInit {
         divisa_id: f.divisa_id ?? undefined,
         descripcion: f.descripcion ?? undefined,
       };
-      this.api.createMovimiento(payload).subscribe(() => { this.close(); this.reloadAll(); });
+      const req$ = f.id
+        ? this.api.updateMovimiento(f.id, payload)
+        : this.api.createMovimiento(payload);
+      req$.subscribe({
+        next: () => { this.close(); this.load(); },
+        error: (err) => alert(err?.error?.error ?? 'No se pudo guardar la revalorización.'),
+      });
       return;
     }
 
@@ -464,19 +526,13 @@ export class MovimientosComponent implements OnInit {
     this.api.deleteMovimiento(m.id).subscribe(() => this.load());
   }
 
-  // A revaluation changes cuenta.valor_actual, so refresh cuentas too.
-  reloadAll() {
-    this.api.getCuentas().subscribe((c) => this.cuentas.set(c));
-    this.load();
-  }
-
   signed(m: Movimiento): number {
     const v = Number(m.monto);
     return m.tipo === 'gasto' ? -Math.abs(v) : v;
   }
 
   label(t: string): string {
-    return t === 'revalorizacion' ? 'Revalorización' : t.charAt(0).toUpperCase() + t.slice(1);
+    return t.charAt(0).toUpperCase() + t.slice(1);
   }
 
   fmt(n: number): string {

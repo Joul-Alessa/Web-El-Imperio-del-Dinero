@@ -45,6 +45,21 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
+// Balance of a cuenta at a given moment: sum of ingresos minus gastos over
+// movements strictly earlier than `fecha`. Pass `excludeMovimientoId` when
+// editing so the movement being edited doesn't count against itself.
+router.get('/:id/balance', async (req, res) => {
+  const q = db('movimientos').where('cuenta_id', req.params.id);
+  if (req.query.fecha) q.where('fecha', '<', req.query.fecha);
+  if (req.query.excludeMovimientoId) q.andWhere('id', '!=', req.query.excludeMovimientoId);
+  const rows = await q.select('tipo', 'monto');
+  const balance = rows.reduce(
+    (a, m) => (m.tipo === 'gasto' ? a - Number(m.monto) : a + Number(m.monto)),
+    0,
+  );
+  res.json({ balance });
+});
+
 router.get('/:id', async (req, res) => {
   const row = await baseQuery().where('c.id', req.params.id).first();
   if (!row) return res.status(404).json({ error: 'Cuenta no encontrada' });

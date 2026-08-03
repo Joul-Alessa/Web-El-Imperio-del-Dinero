@@ -63,51 +63,97 @@ router.get('/:id', async (req, res) => {
   res.json(row);
 });
 
+// Compute the balance of a cuenta strictly before a given moment, optionally
+// excluding a movement (used when editing a movement — it must not count
+// against its own recomputation).
+async function computeBalance(cuentaId, fecha, excludeMovimientoId = null) {
+  const q = db('movimientos').where('cuenta_id', cuentaId).where('fecha', '<', fecha);
+  if (excludeMovimientoId != null) q.andWhere('id', '!=', excludeMovimientoId);
+  const rows = await q.select('tipo', 'monto');
+  return rows.reduce(
+    (a, m) => (m.tipo === 'gasto' ? a - Number(m.monto) : a + Number(m.monto)),
+    0,
+  );
+}
+
+// Translate a revalorización payload into a concrete {tipo, monto, ...} row.
+// Returns null when the delta is zero (no adjustment to record).
+async function resolveRevalorizacion(body, excludeMovimientoId = null) {
+  const { cuenta_id, valor_actual_nuevo, fecha, persona_id, divisa_id, descripcion } = body;
+  const cuenta = await db('cuentas_financieras').where('id', cuenta_id).first();
+  if (!cuenta) return { error: { status: 404, message: 'Cuenta no encontrada' } };
+
+  const valorAnterior = await computeBalance(cuenta_id, fecha, excludeMovimientoId);
+  const delta = Number(valor_actual_nuevo) - valorAnterior;
+
+  if (delta === 0) {
+    return {
+      error: {
+        status: 400,
+        message: `El nuevo valor actual (${valor_actual_nuevo}) iguala al balance calculado (${valorAnterior}); no hay ajuste que registrar.`,
+      },
+    };
+  }
+
+  return {
+    row: {
+      fecha,
+      persona_id,
+      cuenta_id,
+      tipo: delta > 0 ? 'ingreso' : 'gasto',
+      monto: Math.abs(delta),
+      divisa_id: divisa_id || cuenta.divisa_id,
+      instrumento_id: null,
+      cantidad: null,
+      precio_unitario: null,
+      descripcion: descripcion || `Revalorización: ${valorAnterior} → ${valor_actual_nuevo}`,
+    },
+    valorAnterior,
+  };
+}
+
 router.post('/', async (req, res) => {
   const { tipo } = req.body;
 
   if (tipo === 'revalorizacion') {
-    const { cuenta_id, valor_actual_nuevo, fecha, persona_id, divisa_id, descripcion } = req.body;
-
-    const cuenta = await db('cuentas_financieras').where('id', cuenta_id).first();
-    if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
-
-    const valorAnterior = cuenta.valor_actual || 0;
-    const monto = valor_actual_nuevo - valorAnterior;
-
-    const [id] = await db('movimientos').insert({
-      fecha,
-      persona_id,
-      cuenta_id,
-      tipo: 'revalorizacion',
-      monto,
-      divisa_id: divisa_id || cuenta.divisa_id,
-      descripcion: descripcion || `Revalorización: ${valorAnterior} → ${valor_actual_nuevo}`,
+    const result = await resolveRevalorizacion(req.body);
+    if (result.error) return res.status(result.error.status).json({ error: result.error.message });
+    const [id] = await db('movimientos').insert(result.row);
+    return res.status(201).json({
+      id, tipo: result.row.tipo, monto: result.row.monto,
+      valor_anterior: result.valorAnterior, valor_actual_nuevo: req.body.valor_actual_nuevo,
     });
-
-    await db('cuentas_financieras').where('id', cuenta_id).update({
-      valor_actual: valor_actual_nuevo,
-    });
-
-    res.status(201).json({ id, monto, valor_anterior: valorAnterior, valor_actual_nuevo });
-  } else {
-    const {
-      fecha, persona_id, cuenta_id, monto, divisa_id,
-      instrumento_id, cantidad, precio_unitario, descripcion,
-    } = req.body;
-
-    const [id] = await db('movimientos').insert({
-      fecha, persona_id, cuenta_id, tipo, monto, divisa_id,
-      instrumento_id, cantidad, precio_unitario, descripcion,
-    });
-
-    res.status(201).json({ id, ...req.body });
   }
+
+  const {
+    fecha, persona_id, cuenta_id, monto, divisa_id,
+    instrumento_id, cantidad, precio_unitario, descripcion,
+  } = req.body;
+
+  const [id] = await db('movimientos').insert({
+    fecha, persona_id, cuenta_id, tipo, monto, divisa_id,
+    instrumento_id, cantidad, precio_unitario, descripcion,
+  });
+
+  res.status(201).json({ id, ...req.body });
 });
 
 router.put('/:id', async (req, res) => {
+  const { tipo } = req.body;
+
+  if (tipo === 'revalorizacion') {
+    const result = await resolveRevalorizacion(req.body, req.params.id);
+    if (result.error) return res.status(result.error.status).json({ error: result.error.message });
+    const count = await db('movimientos').where('id', req.params.id).update(result.row);
+    if (!count) return res.status(404).json({ error: 'Movimiento no encontrado' });
+    return res.json({
+      id: Number(req.params.id), tipo: result.row.tipo, monto: result.row.monto,
+      valor_anterior: result.valorAnterior, valor_actual_nuevo: req.body.valor_actual_nuevo,
+    });
+  }
+
   const {
-    fecha, persona_id, cuenta_id, tipo, monto, divisa_id,
+    fecha, persona_id, cuenta_id, monto, divisa_id,
     instrumento_id, cantidad, precio_unitario, descripcion,
   } = req.body;
   const count = await db('movimientos').where('id', req.params.id).update({
