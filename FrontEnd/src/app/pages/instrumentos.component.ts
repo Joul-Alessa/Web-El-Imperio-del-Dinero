@@ -74,6 +74,7 @@ import { Instrumento, Divisa } from '../core/models';
               <div class="field">
                 <label>Tipo</label>
                 <select class="select" [(ngModel)]="editing().tipo">
+                  <option [ngValue]="null" disabled>Selecciona…</option>
                   <option value="renta fija">Renta fija</option>
                   <option value="renta variable">Renta variable</option>
                   <option value="ETF">ETF</option>
@@ -124,7 +125,7 @@ export class InstrumentosComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   blank(): Instrumento {
-    return { nombre: '', tipo: 'renta variable', riesgo: null, divisa_base_id: null, institucion_origen: '' };
+    return { nombre: '', tipo: null as any, riesgo: null, divisa_base_id: null, institucion_origen: '' };
   }
 
   load() {

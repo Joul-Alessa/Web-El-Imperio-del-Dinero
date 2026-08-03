@@ -64,6 +64,7 @@ import { Institucion } from '../core/models';
               <div class="field">
                 <label>Tipo</label>
                 <select class="select" [(ngModel)]="editing().tipo">
+                  <option [ngValue]="null" disabled>Selecciona…</option>
                   <option value="banco">Banco</option>
                   <option value="fintech">Fintech</option>
                   <option value="broker">Broker</option>
@@ -85,7 +86,7 @@ export class InstitucionesComponent implements OnInit {
   items = signal<Institucion[]>([]);
   loading = signal(true);
   showForm = signal(false);
-  editing = signal<Institucion>({ nombre: '', tipo: 'banco' });
+  editing = signal<Institucion>({ nombre: '', tipo: null as any });
 
   readonly tipoLabels: Record<string, string> = {
     banco: 'Banco',
@@ -106,7 +107,7 @@ export class InstitucionesComponent implements OnInit {
     });
   }
 
-  openCreate() { this.editing.set({ nombre: '', tipo: 'banco' }); this.showForm.set(true); }
+  openCreate() { this.editing.set({ nombre: '', tipo: null as any }); this.showForm.set(true); }
   openEdit(i: Institucion) { this.editing.set({ ...i }); this.showForm.set(true); }
   close() { this.showForm.set(false); }
 

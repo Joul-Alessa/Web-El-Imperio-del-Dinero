@@ -117,6 +117,7 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
               <div class="field">
                 <label>Persona (dueño)</label>
                 <select class="select" [(ngModel)]="editing().persona_id">
+                  <option [ngValue]="null" disabled>Selecciona…</option>
                   @for (p of personas(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
                 </select>
               </div>
@@ -130,12 +131,14 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
               <div class="field">
                 <label>Tipo de cuenta</label>
                 <select class="select" [(ngModel)]="editing().tipo">
+                  <option [ngValue]="null" disabled>Selecciona…</option>
                   @for (t of tipos; track t) { <option [ngValue]="t">{{ tipoLabels[t] }}</option> }
                 </select>
               </div>
               <div class="field">
                 <label>Divisa</label>
                 <select class="select" [(ngModel)]="editing().divisa_id">
+                  <option [ngValue]="null" disabled>Selecciona…</option>
                   @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }} — {{ d.nombre }}</option> }
                 </select>
               </div>
@@ -223,8 +226,8 @@ export class CuentasComponent implements OnInit {
 
   blank(): Cuenta {
     return {
-      persona_id: undefined as any, institucion_id: null, tipo: 'efectivo',
-      instrumento_id: null, divisa_id: undefined as any, nombre: '',
+      persona_id: null as any, institucion_id: null, tipo: null as any,
+      instrumento_id: null, divisa_id: null as any, nombre: '',
       plazo: null, cantidad: null, valor_compra: null, valor_actual: null, descripcion: null,
     };
   }
@@ -248,10 +251,7 @@ export class CuentasComponent implements OnInit {
   }
 
   openCreate() {
-    const b = this.blank();
-    b.persona_id = this.personas()[0]?.id as any;
-    b.divisa_id = this.divisas()[0]?.id as any;
-    this.editing.set(b);
+    this.editing.set(this.blank());
     this.showForm.set(true);
   }
   openEdit(c: Cuenta) { this.editing.set({ ...c }); this.showForm.set(true); }

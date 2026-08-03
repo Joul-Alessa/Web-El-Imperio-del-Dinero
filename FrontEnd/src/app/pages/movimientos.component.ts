@@ -219,7 +219,7 @@ interface MovForm {
                 <!-- Row 3: Monto | Divisa -->
                 <div class="field">
                   <label>Monto</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="form().monto" placeholder="0" />
+                  <input class="input" type="number" step="any" min="0" [(ngModel)]="form().monto" placeholder="0" />
                 </div>
                 <div class="field">
                   <label>Divisa</label>
@@ -427,7 +427,8 @@ export class MovimientosComponent implements OnInit {
     const f = this.form();
     if (!f.fecha || !f.persona_id || !f.cuenta_id) return false;
     if (f.tipo === 'revalorizacion') return f.valor_actual_nuevo != null;
-    return f.monto != null && !!f.divisa_id;
+    // Ingreso/gasto: monto positivo obligatorio (negativos no aplican).
+    return f.monto != null && Number(f.monto) > 0 && !!f.divisa_id;
   }
 
   save() {

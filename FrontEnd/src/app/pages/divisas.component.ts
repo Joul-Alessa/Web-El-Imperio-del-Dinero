@@ -74,7 +74,7 @@ import { Divisa } from '../core/models';
           </div>
           <div class="modal-footer">
             <button class="btn" (click)="close()">Cancelar</button>
-            <button class="btn btn-primary" (click)="save()" [disabled]="!editing().codigo || !editing().nombre">Guardar</button>
+            <button class="btn btn-primary" (click)="save()" [disabled]="!editing().codigo || !editing().nombre || !editing().simbolo">Guardar</button>
           </div>
         </div>
       </div>
