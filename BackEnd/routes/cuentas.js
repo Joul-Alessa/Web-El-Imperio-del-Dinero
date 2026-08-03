@@ -17,7 +17,8 @@ function baseQuery() {
       'd.simbolo as divisa_simbolo',
       'instr.nombre as instrumento_nombre',
       'instr.tipo as instrumento_tipo'
-    );
+    )
+    .orderBy('c.activo', 'desc');
 }
 
 router.get('/', async (req, res) => {
@@ -81,11 +82,12 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const {
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
-    nombre, plazo, cantidad, valor_compra, valor_actual, descripcion,
+    nombre, plazo, cantidad, valor_compra, valor_actual, descripcion, activo,
   } = req.body;
   const count = await db('cuentas_financieras').where('id', req.params.id).update({
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
     nombre, plazo, cantidad, valor_compra, valor_actual, descripcion,
+    activo: activo === undefined ? undefined : Number(activo),
   });
   if (!count) return res.status(404).json({ error: 'Cuenta no encontrada' });
   res.json({ id: Number(req.params.id), ...req.body });

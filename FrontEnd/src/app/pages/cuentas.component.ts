@@ -81,7 +81,7 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
             </thead>
             <tbody>
               @for (c of cuentas(); track c.id) {
-                <tr>
+                <tr [class.cuenta-inactiva]="c.activo === 0">
                   <td><strong>{{ c.nombre }}</strong>@if (c.plazo) { <div class="muted" style="font-size:.8rem">Plazo: {{ c.plazo }}</div> }</td>
                   <td>{{ c.persona_nombre }}</td>
                   <td>{{ c.institucion_nombre || '—' }}</td>
@@ -89,9 +89,12 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
                   <td>{{ c.instrumento_nombre || '—' }}</td>
                   <td><span class="badge badge-primary">{{ c.divisa_codigo }}</span></td>
                   <td class="num">{{ c.valor_actual != null ? (c.divisa_simbolo + ' ' + fmt(c.valor_actual)) : '—' }}</td>
-                  <td class="actions">
+                  <td class="actions" style="text-align:right; white-space:nowrap">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(c)">✏️</button>
-                    <button class="btn btn-sm btn-danger" (click)="remove(c)">🗑️</button>
+                    <label class="switch" title="{{ c.activo === 0 ? 'Activar' : 'Desactivar' }}">
+                      <input type="checkbox" [checked]="c.activo !== 0" (change)="toggleActivo(c)" />
+                      <span class="slider"></span>
+                    </label>
                   </td>
                 </tr>
               }
@@ -229,6 +232,7 @@ export class CuentasComponent implements OnInit {
       persona_id: null as any, institucion_id: null, tipo: null as any,
       instrumento_id: null, divisa_id: null as any, nombre: '',
       plazo: null, cantidad: null, valor_compra: null, valor_actual: null, descripcion: null,
+      activo: 1,
     };
   }
 
@@ -268,10 +272,10 @@ export class CuentasComponent implements OnInit {
     req.subscribe(() => { this.close(); this.load(); });
   }
 
-  remove(c: Cuenta) {
+  toggleActivo(c: Cuenta) {
     if (!c.id) return;
-    if (!confirm(`¿Eliminar la cuenta "${c.nombre}"?`)) return;
-    this.api.deleteCuenta(c.id).subscribe(() => this.load());
+    const activo = c.activo === 0 ? 1 : 0;
+    this.api.updateCuenta(c.id, { ...c, activo }).subscribe(() => this.load());
   }
 
   fmt(n: number): string {

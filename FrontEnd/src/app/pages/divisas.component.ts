@@ -39,7 +39,6 @@ import { Divisa } from '../core/models';
                   <td>{{ d.simbolo }}</td>
                   <td class="actions">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(d)">✏️ Editar</button>
-                    <button class="btn btn-sm btn-danger" (click)="remove(d)">🗑️</button>
                   </td>
                 </tr>
               }

@@ -37,7 +37,6 @@ import { Persona } from '../core/models';
                   <td><strong>{{ p.nombre }}</strong></td>
                   <td class="actions">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(p)">✏️ Editar</button>
-                    <button class="btn btn-sm btn-danger" (click)="remove(p)">🗑️</button>
                   </td>
                 </tr>
               }

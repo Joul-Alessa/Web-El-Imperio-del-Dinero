@@ -48,7 +48,6 @@ import { Instrumento, Divisa } from '../core/models';
                   <td class="muted">{{ i.institucion_origen || '—' }}</td>
                   <td class="actions">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(i)">✏️ Editar</button>
-                    <button class="btn btn-sm btn-danger" (click)="remove(i)">🗑️</button>
                   </td>
                 </tr>
               }

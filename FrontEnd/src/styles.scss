@@ -284,6 +284,41 @@ table.data tbody tr:hover { background: var(--surface-hover); }
 table.data .num { text-align: right; font-variant-numeric: tabular-nums; }
 table.data .actions { text-align: right; white-space: nowrap; }
 
+/* Inactive accounts */
+table.data tr.cuenta-inactiva { opacity: 0.5; }
+table.data tr.cuenta-inactiva:hover { background: var(--surface-hover); }
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+  vertical-align: middle;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--border);
+  border-radius: 20px;
+  transition: background-color 0.15s ease;
+}
+.switch .slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  top: 2px;
+  background: var(--surface);
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .slider { background: var(--primary, #2563eb); }
+.switch input:checked + .slider::before { transform: translateX(18px); }
+
 /* Badges */
 .badge {
   display: inline-flex;

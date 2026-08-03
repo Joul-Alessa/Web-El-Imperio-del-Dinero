@@ -44,6 +44,7 @@ export interface Cuenta {
   valor_compra?: number | null;
   valor_actual?: number | null;
   descripcion?: string | null;
+  activo?: number;
   // joined
   persona_nombre?: string;
   institucion_nombre?: string;

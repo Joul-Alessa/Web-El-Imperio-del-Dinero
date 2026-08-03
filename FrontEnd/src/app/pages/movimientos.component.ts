@@ -295,10 +295,14 @@ export class MovimientosComponent implements OnInit {
   esInversion = computed(() => this.selectedCuenta()?.tipo === 'inversión');
 
   // If a persona is selected, only her cuentas show; otherwise all of them.
+  // Only active accounts are offered, but the currently-selected one is always
+  // kept visible so editing a movement on an inactive account still works.
   cuentasFiltradas = computed(() => {
     const pid = this.form().persona_id;
-    if (pid == null) return this.cuentas();
-    return this.cuentas().filter((c) => c.persona_id === pid);
+    const selid = this.form().cuenta_id;
+    let list = this.cuentas().filter((c) => c.activo !== 0 || (selid != null && c.id === selid));
+    if (pid != null) list = list.filter((c) => c.persona_id === pid);
+    return list;
   });
 
   totalIngresos = computed(() => this.sum('ingreso'));
