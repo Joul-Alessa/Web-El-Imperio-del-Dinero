@@ -39,9 +39,9 @@ import { Instrumento, Divisa } from '../core/models';
                 <tr>
                   <td class="muted">#{{ i.id }}</td>
                   <td><strong>{{ i.nombre }}</strong></td>
-                  <td><span class="badge">{{ i.tipo }}</span></td>
+                  <td><span class="badge">{{ label(i.tipo) }}</span></td>
                   <td>
-                    @if (i.riesgo) { <span class="badge" [class.badge-danger]="i.riesgo === 'alto'" [class.badge-accent]="i.riesgo === 'medio'">{{ i.riesgo }}</span> }
+                    @if (i.riesgo) { <span class="badge" [class.badge-danger]="i.riesgo === 'alto'" [class.badge-accent]="i.riesgo === 'medio'">{{ label(i.riesgo) }}</span> }
                     @else { <span class="muted">—</span> }
                   </td>
                   <td>{{ i.divisa_codigo || '—' }}</td>
@@ -150,6 +150,10 @@ export class InstrumentosComponent implements OnInit {
     const i = this.editing();
     const req = i.id ? this.api.updateInstrumento(i.id, i) : this.api.createInstrumento(i);
     req.subscribe(() => { this.close(); this.load(); });
+  }
+
+  label(t: string): string {
+    return t.charAt(0).toUpperCase() + t.slice(1);
   }
 
   remove(i: Instrumento) {
