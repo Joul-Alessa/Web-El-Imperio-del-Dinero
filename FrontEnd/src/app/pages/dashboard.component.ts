@@ -29,9 +29,16 @@ type GroupDim = 'persona' | 'cuenta' | 'institucion' | 'instrumento' | 'divisa';
       <div class="card filters">
         <div class="field">
           <label>Persona</label>
-          <select class="select" [(ngModel)]="fPersona" (ngModelChange)="recompute()">
+          <select class="select" [ngModel]="fPersona" (ngModelChange)="onFPersonaChange($event)">
             <option [ngValue]="null">Todas</option>
             @for (p of personas(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label>Cuenta</label>
+          <select class="select" [ngModel]="fCuenta" (ngModelChange)="onFCuentaChange($event)">
+            <option [ngValue]="null">Todas</option>
+            @for (c of cuentasFiltroDisponibles(); track c.id) { <option [ngValue]="c.id">{{ cuentaLabelFiltro(c) }}</option> }
           </select>
         </div>
         <div class="field">
@@ -176,6 +183,7 @@ export class DashboardComponent implements OnInit {
 
   // filters
   fPersona: number | null = null;
+  fCuenta: number | null = null;
   fInstitucion: number | null = null;
   fTipo: string | null = null;
   fDesde: string | null = null;
@@ -256,6 +264,34 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  cuentasFiltroDisponibles(): Cuenta[] {
+    if (this.fPersona == null) return this.cuentas();
+    return this.cuentas().filter(c => c.persona_id === this.fPersona);
+  }
+
+  cuentaLabelFiltro(c: Cuenta): string {
+    const prefix = this.fPersona == null ? `(${c.persona_nombre}) ` : '';
+    return `${prefix}${c.nombre}`;
+  }
+
+  onFPersonaChange(id: number | null) {
+    this.fPersona = id;
+    if (this.fCuenta != null && id != null) {
+      const cuenta = this.cuentas().find(c => c.id === this.fCuenta);
+      if (cuenta && cuenta.persona_id !== id) this.fCuenta = null;
+    }
+    this.recompute();
+  }
+
+  onFCuentaChange(id: number | null) {
+    this.fCuenta = id;
+    if (id != null) {
+      const cuenta = this.cuentas().find(c => c.id === id);
+      if (cuenta) this.fPersona = cuenta.persona_id;
+    }
+    this.recompute();
+  }
+
   groupLabel(): string {
     return { persona: 'persona', cuenta: 'cuenta', institucion: 'institución', instrumento: 'instrumento', divisa: 'divisa' }[this.groupDim];
   }
@@ -272,6 +308,7 @@ export class DashboardComponent implements OnInit {
     // client-side filtering (persona / institución / tipo)
     const passNonDate = (m: Movimiento) =>
       (this.fPersona == null || m.persona_id === this.fPersona) &&
+      (this.fCuenta == null || m.cuenta_id === this.fCuenta) &&
       (this.fInstitucion == null || m.institucion_nombre === this.instituciones().find(i => i.id === this.fInstitucion)?.nombre) &&
       (this.fTipo == null || m.tipo === this.fTipo);
 
@@ -295,6 +332,7 @@ export class DashboardComponent implements OnInit {
     // patrimonio from cuentas (filtered by persona/institución)
     const cuentasF = this.cuentas().filter(c =>
       (this.fPersona == null || c.persona_id === this.fPersona) &&
+      (this.fCuenta == null || c.id === this.fCuenta) &&
       (this.fInstitucion == null || c.institucion_id === this.fInstitucion)
     );
     this.patrimonio.set(cuentasF.reduce((a, c) => a + Number(c.valor_actual ?? 0), 0));
