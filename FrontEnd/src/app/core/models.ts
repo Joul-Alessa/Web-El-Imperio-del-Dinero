@@ -22,11 +22,12 @@ export interface Instrumento {
   tipo: string; // renta fija, renta variable, ETF
   riesgo?: string | null; // bajo, medio, alto
   divisa_base_id?: number | null;
-  institucion_origen?: string | null;
+  institucion_id?: number | null;
   metadata?: any;
   // joined
   divisa_codigo?: string;
   divisa_nombre?: string;
+  institucion_nombre?: string;
 }
 
 export type TipoCuenta = 'efectivo' | 'débito' | 'crédito' | 'apartado' | 'inversión';

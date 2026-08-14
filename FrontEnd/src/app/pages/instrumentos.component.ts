@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../services/api.service';
-import { Instrumento, Divisa } from '../core/models';
+import { Instrumento, Divisa, Institucion } from '../core/models';
 
 @Component({
   selector: 'app-instrumentos',
@@ -31,7 +31,7 @@ import { Instrumento, Divisa } from '../core/models';
             <thead>
               <tr>
                 <th style="width:70px">ID</th><th>Nombre</th><th>Tipo</th>
-                <th>Riesgo</th><th>Divisa base</th><th>Origen</th><th class="actions">Acciones</th>
+                <th>Riesgo</th><th>Divisa base</th><th>Institución</th><th class="actions">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -45,7 +45,7 @@ import { Instrumento, Divisa } from '../core/models';
                     @else { <span class="muted">—</span> }
                   </td>
                   <td>{{ i.divisa_codigo || '—' }}</td>
-                  <td class="muted">{{ i.institucion_origen || '—' }}</td>
+                  <td>{{ i.institucion_nombre || '—' }}</td>
                   <td class="actions">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(i)">✏️ Editar</button>
                   </td>
@@ -98,8 +98,13 @@ import { Instrumento, Divisa } from '../core/models';
                 </select>
               </div>
               <div class="field">
-                <label>Institución de origen</label>
-                <input class="input" [(ngModel)]="editing().institucion_origen" placeholder="Ej. NASDAQ, CETES Directo" />
+                <label>Institución</label>
+                <select class="select" [(ngModel)]="editing().institucion_id">
+                  <option [ngValue]="null">— Ninguna —</option>
+                  @for (inst of instituciones(); track inst.id) {
+                    <option [ngValue]="inst.id">{{ inst.nombre }}</option>
+                  }
+                </select>
               </div>
             </div>
           </div>
@@ -115,6 +120,7 @@ import { Instrumento, Divisa } from '../core/models';
 export class InstrumentosComponent implements OnInit {
   items = signal<Instrumento[]>([]);
   divisas = signal<Divisa[]>([]);
+  instituciones = signal<Institucion[]>([]);
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Instrumento>(this.blank());
@@ -124,7 +130,7 @@ export class InstrumentosComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   blank(): Instrumento {
-    return { nombre: '', tipo: null as any, riesgo: null, divisa_base_id: null, institucion_origen: '' };
+    return { nombre: '', tipo: null as any, riesgo: null, divisa_base_id: null, institucion_id: null };
   }
 
   load() {
@@ -132,10 +138,12 @@ export class InstrumentosComponent implements OnInit {
     forkJoin({
       instrumentos: this.api.getInstrumentos(),
       divisas: this.api.getDivisas(),
+      instituciones: this.api.getInstituciones(),
     }).subscribe({
-      next: ({ instrumentos, divisas }) => {
+      next: ({ instrumentos, divisas, instituciones }) => {
         this.items.set(instrumentos);
         this.divisas.set(divisas);
+        this.instituciones.set(instituciones);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
