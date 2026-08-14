@@ -329,13 +329,14 @@ export class DashboardComponent implements OnInit {
     this.gastos.set(gas);
     this.flujoNeto.set(ing - gas);
 
-    // patrimonio from cuentas (filtered by persona/institución)
+    // patrimonio from movimientos (balance per cuenta, filtered by persona/institución)
     const cuentasF = this.cuentas().filter(c =>
       (this.fPersona == null || c.persona_id === this.fPersona) &&
       (this.fCuenta == null || c.id === this.fCuenta) &&
       (this.fInstitucion == null || c.institucion_id === this.fInstitucion)
     );
-    this.patrimonio.set(cuentasF.reduce((a, c) => a + Number(c.valor_actual ?? 0), 0));
+    const balancePorCuenta = this.calcBalances(this.movimientos());
+    this.patrimonio.set(cuentasF.reduce((a, c) => a + (balancePorCuenta.get(c.id!) ?? 0), 0));
     this.cuentasCount.set(cuentasF.length);
 
     const colors = this.themeColors();
@@ -346,7 +347,7 @@ export class DashboardComponent implements OnInit {
 
     this.buildLine(base, filtered, colors, commonScales);
     this.buildBar(filtered, colors, commonScales);
-    this.buildDoughnut(cuentasF, colors);
+    this.buildDoughnut(cuentasF, balancePorCuenta, colors);
   }
 
   private buildLine(base: Movimiento[], filtered: Movimiento[], colors: any, scales: any) {
@@ -406,11 +407,19 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  private buildDoughnut(cuentasF: Cuenta[], colors: any) {
+  private calcBalances(movs: Movimiento[]): Map<number, number> {
+    const map = new Map<number, number>();
+    for (const m of movs) {
+      map.set(m.cuenta_id, (map.get(m.cuenta_id) ?? 0) + this.net(m));
+    }
+    return map;
+  }
+
+  private buildDoughnut(cuentasF: Cuenta[], balancePorCuenta: Map<number, number>, colors: any) {
     const groups = new Map<string, number>();
     for (const c of cuentasF) {
       const k = this.groupValueCuenta(c);
-      groups.set(k, (groups.get(k) ?? 0) + Number(c.valor_actual ?? 0));
+      groups.set(k, (groups.get(k) ?? 0) + (balancePorCuenta.get(c.id!) ?? 0));
     }
     const labels = [...groups.keys()];
     this.doughnutData.set({
