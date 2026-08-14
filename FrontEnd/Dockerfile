@@ -12,10 +12,10 @@ CMD ["npm", "run", "start", "--", "--host", "0.0.0.0", "--poll=1000"]
 # ---------- BUILD ----------
 FROM node:22.12.0-slim AS build
 WORKDIR /app
-ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN npm run typecheck
 RUN npm run build -- --configuration production
 
 # ---------- PRODUCTION (nginx) ----------

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../db/knex');
 const registrarHistorial = require('../db/registrarHistorial');
+const { calcularBalance, calcularDeltaRevalorizacion } = require('../lib/balances');
 
 function baseQuery() {
   return db('movimientos as m')
@@ -71,10 +72,7 @@ async function computeBalance(cuentaId, fecha, excludeMovimientoId = null) {
   const q = db('movimientos').where('cuenta_id', cuentaId).where('fecha', '<', fecha);
   if (excludeMovimientoId != null) q.andWhere('id', '!=', excludeMovimientoId);
   const rows = await q.select('tipo', 'monto');
-  return rows.reduce(
-    (a, m) => (m.tipo === 'gasto' ? a - Number(m.monto) : a + Number(m.monto)),
-    0,
-  );
+  return calcularBalance(rows);
 }
 
 // Translate a revalorización payload into a concrete {tipo, monto, ...} row.
@@ -85,9 +83,9 @@ async function resolveRevalorizacion(body, excludeMovimientoId = null) {
   if (!cuenta) return { error: { status: 404, message: 'Cuenta no encontrada' } };
 
   const valorAnterior = await computeBalance(cuenta_id, fecha, excludeMovimientoId);
-  const delta = Number(valor_actual_nuevo) - valorAnterior;
+  const resultado = calcularDeltaRevalorizacion(valorAnterior, valor_actual_nuevo);
 
-  if (delta === 0) {
+  if (!resultado) {
     return {
       error: {
         status: 400,
@@ -101,8 +99,8 @@ async function resolveRevalorizacion(body, excludeMovimientoId = null) {
       fecha,
       persona_id,
       cuenta_id,
-      tipo: delta > 0 ? 'ingreso' : 'gasto',
-      monto: Math.abs(delta),
+      tipo: resultado.tipo,
+      monto: resultado.monto,
       divisa_id: divisa_id || cuenta.divisa_id,
       instrumento_id: null,
       cantidad: null,

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../db/knex');
 const registrarHistorial = require('../db/registrarHistorial');
+const { calcularBalance } = require('../lib/balances');
 
 function baseQuery() {
   return db('cuentas_financieras as c')
@@ -55,11 +56,7 @@ router.get('/:id/balance', async (req, res) => {
   if (req.query.fecha) q.where('fecha', '<', req.query.fecha);
   if (req.query.excludeMovimientoId) q.andWhere('id', '!=', req.query.excludeMovimientoId);
   const rows = await q.select('tipo', 'monto');
-  const balance = rows.reduce(
-    (a, m) => (m.tipo === 'gasto' ? a - Number(m.monto) : a + Number(m.monto)),
-    0,
-  );
-  res.json({ balance });
+  res.json({ balance: calcularBalance(rows) });
 });
 
 router.get('/:id', async (req, res) => {

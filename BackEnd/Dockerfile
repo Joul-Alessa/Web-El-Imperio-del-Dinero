@@ -9,6 +9,11 @@ RUN npm ci
 EXPOSE 3000
 CMD ["sh", "-c", "npm run migrate && node --watch index.js"]
 
+# ---------- TEST ----------
+FROM dev AS test
+COPY . .
+RUN npm test
+
 # ---------- BUILD (deps compiled for prod) ----------
 FROM node:22.12.0-slim AS build
 WORKDIR /app
