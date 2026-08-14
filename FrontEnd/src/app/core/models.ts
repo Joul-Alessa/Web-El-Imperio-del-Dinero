@@ -40,9 +40,6 @@ export interface Cuenta {
   divisa_id: number;
   nombre: string;
   plazo?: string | null;
-  cantidad?: number | null;
-  valor_compra?: number | null;
-  valor_actual?: number | null;
   descripcion?: string | null;
   activo?: number;
   // joined

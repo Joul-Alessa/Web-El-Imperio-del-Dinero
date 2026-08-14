@@ -68,11 +68,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const {
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
-    nombre, plazo, cantidad, valor_compra, valor_actual, descripcion,
+    nombre, plazo, descripcion,
   } = req.body;
   const [id] = await db('cuentas_financieras').insert({
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
-    nombre, plazo, cantidad, valor_compra, valor_actual, descripcion,
+    nombre, plazo, descripcion,
   });
   await registrarHistorial('cuentas', id, 'creado', { id, ...req.body });
   res.status(201).json({ id, ...req.body });
@@ -81,11 +81,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const {
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
-    nombre, plazo, cantidad, valor_compra, valor_actual, descripcion, activo,
+    nombre, plazo, descripcion, activo,
   } = req.body;
   const count = await db('cuentas_financieras').where('id', req.params.id).update({
     persona_id, institucion_id, tipo, instrumento_id, divisa_id,
-    nombre, plazo, cantidad, valor_compra, valor_actual, descripcion,
+    nombre, plazo, descripcion,
     activo: activo === undefined ? undefined : Number(activo),
   });
   if (!count) return res.status(404).json({ error: 'Cuenta no encontrada' });

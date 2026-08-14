@@ -76,7 +76,7 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
             <thead>
               <tr>
                 <th>Cuenta</th><th>Persona</th><th>Institución</th><th>Tipo</th>
-                <th>Instrumento</th><th>Divisa</th><th class="num">Valor actual</th><th class="actions">Acciones</th>
+                <th>Instrumento</th><th>Divisa</th><th class="actions">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -88,7 +88,6 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
                   <td><span class="badge">{{ tipoLabels[c.tipo] || c.tipo }}</span></td>
                   <td>{{ c.instrumento_nombre || '—' }}</td>
                   <td><span class="badge badge-primary">{{ c.divisa_codigo }}</span></td>
-                  <td class="num">{{ c.valor_actual != null ? (c.divisa_simbolo + ' ' + fmt(c.valor_actual)) : '—' }}</td>
                   <td class="actions" style="text-align:right; white-space:nowrap">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(c)">✏️</button>
                     <label class="switch" title="{{ c.activo === 0 ? 'Activar' : 'Desactivar' }}">
@@ -159,18 +158,6 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
                   <label>Plazo</label>
                   <input class="input" [(ngModel)]="editing().plazo" placeholder="Ej. 1 mes, 2 años" />
                 </div>
-                <div class="field">
-                  <label>Cantidad (títulos)</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="editing().cantidad" placeholder="0" />
-                </div>
-                <div class="field">
-                  <label>Valor de compra</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="editing().valor_compra" placeholder="0" />
-                </div>
-                <div class="field">
-                  <label>Valor actual</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="editing().valor_actual" placeholder="0" />
-                </div>
               }
               <div class="field" style="grid-column: 1 / -1">
                 <label>Descripción</label>
@@ -231,7 +218,7 @@ export class CuentasComponent implements OnInit {
     return {
       persona_id: null as any, institucion_id: null, tipo: null as any,
       instrumento_id: null, divisa_id: null as any, nombre: '',
-      plazo: null, cantidad: null, valor_compra: null, valor_actual: null, descripcion: null,
+      plazo: null, descripcion: null,
       activo: 1,
     };
   }
@@ -278,7 +265,4 @@ export class CuentasComponent implements OnInit {
     this.api.updateCuenta(c.id, { ...c, activo }).subscribe(() => this.load());
   }
 
-  fmt(n: number): string {
-    return Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
 }
