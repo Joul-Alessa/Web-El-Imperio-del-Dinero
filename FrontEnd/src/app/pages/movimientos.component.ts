@@ -226,7 +226,7 @@ interface MovForm {
                 <!-- Row 3: Monto | Divisa -->
                 <div class="field">
                   <label>Monto</label>
-                  <input class="input" type="number" step="any" min="0" [(ngModel)]="form().monto" placeholder="0" />
+                  <input class="input" type="number" step="any" min="0" [ngModel]="form().monto" (ngModelChange)="onMontoInput($event)" placeholder="0" />
                 </div>
                 <div class="field">
                   <label>Divisa</label>
@@ -247,11 +247,11 @@ interface MovForm {
                 <!-- Row 5: Cantidad | Precio unitario -->
                 <div class="field">
                   <label>Cantidad (títulos, opcional)</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="form().cantidad" placeholder="0" />
+                  <input class="input" type="number" step="any" [ngModel]="form().cantidad" (ngModelChange)="onCantidadInput($event)" placeholder="0" />
                 </div>
                 <div class="field">
                   <label>Precio unitario (opcional)</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="form().precio_unitario" placeholder="0" />
+                  <input class="input" type="number" step="any" [ngModel]="form().precio_unitario" (ngModelChange)="onPrecioInput($event)" placeholder="0" />
                 </div>
                 }
               }
@@ -311,6 +311,8 @@ export class MovimientosComponent implements OnInit {
   // Balance of the selected cuenta before the form's fecha+hora, fetched from
   // the backend. `null` while pending or before a cuenta is chosen.
   balanceAnterior = signal<number | null>(null);
+
+  private lastAutoField: 'monto' | 'cantidad' | 'precio_unitario' | null = null;
 
   constructor(private api: ApiService) {
     // Refetch balance whenever cuenta / fecha / hora / tipo / id change (in reval mode).
@@ -453,6 +455,59 @@ export class MovimientosComponent implements OnInit {
     });
   }
 
+  onMontoInput(val: number | null) {
+    this.form.update((f) => ({ ...f, monto: val }));
+    this.autoCalcInversion('monto');
+  }
+
+  onCantidadInput(val: number | null) {
+    this.form.update((f) => ({ ...f, cantidad: val }));
+    this.autoCalcInversion('cantidad');
+  }
+
+  onPrecioInput(val: number | null) {
+    this.form.update((f) => ({ ...f, precio_unitario: val }));
+    this.autoCalcInversion('precio_unitario');
+  }
+
+  private autoCalcInversion(changed: 'monto' | 'cantidad' | 'precio_unitario') {
+    if (!this.esInversion()) return;
+
+    if (changed === this.lastAutoField) {
+      this.lastAutoField = null;
+      return;
+    }
+
+    const f = this.form();
+    const fields: ('monto' | 'cantidad' | 'precio_unitario')[] = ['monto', 'cantidad', 'precio_unitario'];
+    let target = this.lastAutoField && this.lastAutoField !== changed ? this.lastAutoField : null;
+
+    if (!target) {
+      const filled = fields.filter((k) => f[k] != null);
+      if (filled.length === 2) {
+        target = fields.find((k) => !filled.includes(k)) ?? null;
+      }
+    }
+
+    if (!target) return;
+
+    const m = f.monto, c = f.cantidad, p = f.precio_unitario;
+    let val: number | null = null;
+
+    if (target === 'monto' && c != null && p != null) {
+      val = c * p;
+    } else if (target === 'cantidad' && m != null && p != null && p !== 0) {
+      val = m / p;
+    } else if (target === 'precio_unitario' && m != null && c != null && c !== 0) {
+      val = m / c;
+    }
+
+    if (val == null) return;
+
+    this.lastAutoField = target;
+    this.form.update((ff) => ({ ...ff, [target]: val }));
+  }
+
   cuentaLabel(c: Cuenta): string {
     // Prefix with persona name only when the persona filter is empty (to disambiguate).
     const prefix = this.form().persona_id == null ? `(${c.persona_nombre}) ` : '';
@@ -468,9 +523,10 @@ export class MovimientosComponent implements OnInit {
     return `${delta > 0 ? 'Ingreso ' : 'Gasto '}${this.fmt(Math.abs(delta))}`;
   }
 
-  openCreate() { this.form.set(this.blank()); this.showForm.set(true); }
+  openCreate() { this.lastAutoField = null; this.form.set(this.blank()); this.showForm.set(true); }
 
   openEdit(m: Movimiento) {
+    this.lastAutoField = null;
     const { fecha, hora } = this.splitDateTime(m.fecha);
     this.form.set({
       id: m.id, tipo: m.tipo, fecha, hora, persona_id: m.persona_id, cuenta_id: m.cuenta_id,
