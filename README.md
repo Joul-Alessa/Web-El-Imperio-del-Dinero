@@ -206,8 +206,10 @@ Todos los endpoints estan bajo el prefijo `/api`. No hay autenticacion; CORS est
 | Metodo | Ruta                       | Descripcion                                                     |
 |--------|----------------------------|-----------------------------------------------------------------|
 | GET    | `/api/cuentas`             | Listar (filtros: `persona_id`, `institucion_id`, `tipo`, `divisa_id`, `instrumento_id`) |
+| GET    | `/api/cuentas/resumen`     | Balance, cantidad de titulos y precio unitario de todas las cuentas |
 | GET    | `/api/cuentas/:id`         | Obtener por ID                                                   |
 | GET    | `/api/cuentas/:id/balance` | Calcular balance a una fecha (`?fecha=...&excludeMovimientoId=...`) |
+| GET    | `/api/cuentas/:id/ultimo-movimiento-inversion` | Ultimo movimiento con cantidad y precio unitario no nulos |
 | POST   | `/api/cuentas`             | Crear                                                            |
 | PUT    | `/api/cuentas/:id`         | Actualizar (incluye campo `activo`)                              |
 | DELETE | `/api/cuentas/:id`         | Eliminar                                                         |
@@ -218,7 +220,7 @@ Todos los endpoints estan bajo el prefijo `/api`. No hay autenticacion; CORS est
 |--------|---------------------------|------------------------------------------------------------------|
 | GET    | `/api/movimientos`        | Listar (filtros: `persona_id`, `cuenta_id`, `tipo`, `fecha_desde`, `fecha_hasta`, `institucion_id`, `instrumento_id`, `divisa_id`) |
 | GET    | `/api/movimientos/:id`    | Obtener por ID                                                    |
-| POST   | `/api/movimientos`        | Crear (si `tipo=revalorizacion`, calcula delta automaticamente)   |
+| POST   | `/api/movimientos`        | Crear (si `tipo=revalorizacion`, calcula delta automaticamente; acepta `cantidad` y `precio_unitario` opcionales) |
 | PUT    | `/api/movimientos/:id`    | Actualizar                                                        |
 | DELETE | `/api/movimientos/:id`    | Eliminar                                                          |
 
@@ -228,7 +230,7 @@ Todos los endpoints estan bajo el prefijo `/api`. No hay autenticacion; CORS est
 |--------|--------------------|----------------------------------------------------------------|
 | GET    | `/api/historial`   | Listar log de auditoria (filtros: `entidad`, `accion`; paginado con `limit` y `offset`) |
 
-**Total: 28 endpoints.** Todas las operaciones de escritura registran automaticamente una entrada en la tabla `historial`.
+**Total: 30 endpoints.** Todas las operaciones de escritura registran automaticamente una entrada en la tabla `historial`.
 
 ### Base de datos
 
