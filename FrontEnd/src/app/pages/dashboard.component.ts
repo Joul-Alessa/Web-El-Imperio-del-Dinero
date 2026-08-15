@@ -126,6 +126,15 @@ type GroupDim = 'persona' | 'cuenta' | 'institucion' | 'instrumento' | 'divisa';
               </div>
             </div>
 
+            @if (showInvChart()) {
+              <div class="card chart-card wide">
+                <div class="chart-head"><h3>Evolución de inversión: {{ selectedCuentaNombre() }}</h3></div>
+                <div class="chart-body">
+                  <app-chart type="line" [data]="invLineData()" [options]="invLineOptions()"></app-chart>
+                </div>
+              </div>
+            }
+
             <div class="card chart-card">
               <div class="chart-head"><h3>Ingresos vs Gastos por {{ groupLabel() }}</h3></div>
               <div class="chart-body">
@@ -202,9 +211,13 @@ export class DashboardComponent implements OnInit {
   lineData = signal<ChartConfiguration['data']>({ labels: [], datasets: [] });
   barData = signal<ChartConfiguration['data']>({ labels: [], datasets: [] });
   doughnutData = signal<ChartConfiguration['data']>({ labels: [], datasets: [] });
+  invLineData = signal<ChartConfiguration['data']>({ labels: [], datasets: [] });
   lineOptions = signal<ChartConfiguration['options']>({});
   barOptions = signal<ChartConfiguration['options']>({});
   doughnutOptions = signal<ChartConfiguration['options']>({});
+  invLineOptions = signal<ChartConfiguration['options']>({});
+  showInvChart = signal(false);
+  selectedCuentaNombre = signal('');
 
   private dataLoaded = false;
 
@@ -348,6 +361,7 @@ export class DashboardComponent implements OnInit {
     this.buildLine(base, filtered, colors, commonScales);
     this.buildBar(filtered, colors, commonScales);
     this.buildDoughnut(cuentasF, balancePorCuenta, colors);
+    this.buildInvLine(base, filtered, colors);
   }
 
   private buildLine(base: Movimiento[], filtered: Movimiento[], colors: any, scales: any) {
@@ -433,6 +447,95 @@ export class DashboardComponent implements OnInit {
     this.doughnutOptions.set({
       plugins: { legend: { position: 'right', labels: { color: colors.text } } },
     });
+  }
+
+  private buildInvLine(base: Movimiento[], filtered: Movimiento[], colors: any) {
+    const cuenta = this.fCuenta != null ? this.cuentas().find(c => c.id === this.fCuenta) : null;
+    if (!cuenta || cuenta.tipo !== 'inversión') {
+      this.showInvChart.set(false);
+      return;
+    }
+
+    this.selectedCuentaNombre.set(cuenta.nombre);
+
+    const movsConDatos = [...this.movimientos()]
+      .filter(m => m.cuenta_id === cuenta.id && m.cantidad != null && m.precio_unitario != null)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.id ?? 0) - (b.id ?? 0));
+
+    if (movsConDatos.length === 0) {
+      this.showInvChart.set(false);
+      return;
+    }
+
+    const dates: string[] = [];
+    const valores: number[] = [];
+    const cantidades: number[] = [];
+    const precios: number[] = [];
+
+    for (const m of movsConDatos) {
+      const d = m.fecha.slice(0, 10);
+      dates.push(d);
+      valores.push(Number(m.cantidad!) * Number(m.precio_unitario!));
+      cantidades.push(Number(m.cantidad!));
+      precios.push(Number(m.precio_unitario!));
+    }
+
+    this.invLineData.set({
+      labels: dates,
+      datasets: [
+        {
+          label: 'Valor total',
+          data: valores,
+          borderColor: PALETTE[0],
+          backgroundColor: PALETTE[0] + '33',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Cantidad de títulos',
+          data: cantidades,
+          borderColor: PALETTE[2],
+          backgroundColor: PALETTE[2] + '33',
+          tension: 0.3,
+          pointRadius: 3,
+          yAxisID: 'y1',
+        },
+        {
+          label: 'Precio unitario',
+          data: precios,
+          borderColor: PALETTE[1],
+          backgroundColor: PALETTE[1] + '33',
+          tension: 0.3,
+          pointRadius: 3,
+          yAxisID: 'y1',
+        },
+      ],
+    });
+
+    this.invLineOptions.set({
+      plugins: { legend: { labels: { color: colors.text } } },
+      scales: {
+        x: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+        y: {
+          type: 'linear',
+          position: 'left',
+          title: { display: true, text: 'Valor total', color: colors.text },
+          ticks: { color: colors.text },
+          grid: { color: colors.grid },
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          title: { display: true, text: 'Títulos / Precio', color: colors.text },
+          ticks: { color: colors.text },
+          grid: { drawOnChartArea: false },
+        },
+      },
+    });
+
+    this.showInvChart.set(true);
   }
 
   fmt(n: number): string {
