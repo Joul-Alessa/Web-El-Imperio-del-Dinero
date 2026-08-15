@@ -65,6 +65,11 @@ export class ApiService {
       params: this.buildParams(params),
     });
   }
+  getUltimoMovInversion(cuentaId: number) {
+    return this.http.get<{ cantidad: number | null; precio_unitario: number | null }>(
+      `${API_URL}/cuentas/${cuentaId}/ultimo-movimiento-inversion`,
+    );
+  }
   createCuenta(c: Cuenta) { return this.http.post<Cuenta>(`${API_URL}/cuentas`, c); }
   updateCuenta(id: number, c: Cuenta) { return this.http.put<Cuenta>(`${API_URL}/cuentas/${id}`, c); }
   deleteCuenta(id: number) { return this.http.delete(`${API_URL}/cuentas/${id}`); }

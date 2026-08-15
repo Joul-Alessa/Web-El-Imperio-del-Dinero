@@ -59,6 +59,18 @@ router.get('/:id/balance', async (req, res) => {
   res.json({ balance: calcularBalance(rows) });
 });
 
+router.get('/:id/ultimo-movimiento-inversion', async (req, res) => {
+  const row = await db('movimientos')
+    .where('cuenta_id', req.params.id)
+    .whereNotNull('cantidad')
+    .whereNotNull('precio_unitario')
+    .orderBy('fecha', 'desc')
+    .orderBy('id', 'desc')
+    .select('cantidad', 'precio_unitario')
+    .first();
+  res.json(row || { cantidad: null, precio_unitario: null });
+});
+
 router.get('/:id', async (req, res) => {
   const row = await baseQuery().where('c.id', req.params.id).first();
   if (!row) return res.status(404).json({ error: 'Cuenta no encontrada' });

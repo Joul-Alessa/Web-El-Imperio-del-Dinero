@@ -456,6 +456,20 @@ export class MovimientosComponent implements OnInit {
       persona_id: cuenta?.persona_id ?? f.persona_id,
       divisa_id: cuenta?.divisa_id ?? f.divisa_id,
     }));
+
+    const f = this.form();
+    if (cuenta?.tipo === 'inversión' && f.tipo !== 'revalorizacion' && !f.id) {
+      this.lastAutoField.set(null);
+      this.api.getUltimoMovInversion(id).subscribe((r) => {
+        if (r.cantidad != null || r.precio_unitario != null) {
+          this.form.update((ff) => ({
+            ...ff,
+            cantidad: r.cantidad,
+            precio_unitario: r.precio_unitario,
+          }));
+        }
+      });
+    }
   }
 
   onPersonaChange(id: number | null) {
