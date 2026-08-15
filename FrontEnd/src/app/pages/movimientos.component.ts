@@ -236,6 +236,9 @@ interface MovForm {
                       ⚡ {{ autoCalcHint() }}
                     </div>
                   }
+                  <div class="muted" style="grid-column:1 / -1; font-size:.78rem">
+                    La cantidad de títulos y el precio unitario representan el total actual al momento del movimiento, no la variación.
+                  </div>
                 }
               } @else {
                 <!-- Row 3: Monto | Divisa -->
@@ -290,6 +293,9 @@ interface MovForm {
                       ⚡ {{ autoCalcHint() }}
                     </div>
                   }
+                  <div class="muted" style="grid-column:1 / -1; font-size:.78rem">
+                    La cantidad de títulos y el precio unitario representan el total actual al momento del movimiento, no la variación.
+                  </div>
                 }
               }
 
