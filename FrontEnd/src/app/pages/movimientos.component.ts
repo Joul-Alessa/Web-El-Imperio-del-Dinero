@@ -250,24 +250,24 @@ interface MovForm {
                     @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
                   </select>
                 </div>
-                @if (esInversion()) {
-                  <!-- Balance posterior (informativo) -->
-                  <div class="field" style="grid-column:1 / -1">
-                    <div class="card" style="padding:12px 14px; background:var(--surface-2)">
-                      <div class="muted" style="font-size:.82rem">
-                        Valor de la cuenta tras el movimiento
-                      </div>
-                      <div style="font-size:1.2rem; font-weight:700">
-                        @if (!form().cuenta_id) {
-                          <span class="muted">Elige una cuenta</span>
-                        } @else if (balancePosterior() === null) {
-                          <span class="muted">{{ balanceAnterior() === null ? 'Calculando…' : 'Ingresa el monto' }}</span>
-                        } @else {
-                          {{ (selectedCuenta()?.divisa_simbolo ?? '') }} {{ fmt(balancePosterior()!) }}
-                        }
-                      </div>
+                <!-- Balance posterior (informativo) -->
+                <div class="field" style="grid-column:1 / -1">
+                  <div class="card" style="padding:12px 14px; background:var(--surface-2)">
+                    <div class="muted" style="font-size:.82rem">
+                      Valor de la cuenta tras el movimiento
+                    </div>
+                    <div style="font-size:1.2rem; font-weight:700">
+                      @if (!form().cuenta_id) {
+                        <span class="muted">Elige una cuenta</span>
+                      } @else if (balancePosterior() === null) {
+                        <span class="muted">Calculando…</span>
+                      } @else {
+                        {{ (selectedCuenta()?.divisa_simbolo ?? '') }} {{ fmt(balancePosterior()!) }}
+                      }
                     </div>
                   </div>
+                </div>
+                @if (esInversion()) {
                   <!-- Instrumento -->
                   <div class="field" style="grid-column:1 / -1">
                     <label>Instrumento (opcional)</label>
@@ -366,17 +366,15 @@ export class MovimientosComponent implements OnInit {
   balancePosterior = computed(() => {
     const f = this.form();
     const ba = this.balanceAnterior();
-    if (ba === null || !this.esInversion() || f.tipo === 'revalorizacion') return null;
-    if (f.monto == null) return null;
+    if (ba === null || f.tipo === 'revalorizacion') return null;
+    if (f.monto == null) return ba;
     return f.tipo === 'gasto' ? ba - Math.abs(Number(f.monto)) : ba + Number(f.monto);
   });
 
   constructor(private api: ApiService) {
     effect(() => {
       const f = this.form();
-      const esInv = this.esInversion();
-      const necesitaBalance = f.tipo === 'revalorizacion' || esInv;
-      if (!necesitaBalance || !f.cuenta_id || !f.fecha) {
+      if (!f.cuenta_id || !f.fecha) {
         this.balanceAnterior.set(null);
         return;
       }
