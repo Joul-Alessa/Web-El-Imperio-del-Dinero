@@ -23,6 +23,46 @@ function baseQuery() {
     .orderBy('c.activo', 'desc');
 }
 
+router.get('/resumen', async (req, res) => {
+  const balances = await db('movimientos')
+    .select('cuenta_id')
+    .sum({ ingresos: db.raw("CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END") })
+    .sum({ gastos: db.raw("CASE WHEN tipo = 'gasto' THEN monto ELSE 0 END") })
+    .groupBy('cuenta_id');
+
+  const ultimosInversion = await db('movimientos as m1')
+    .whereNotNull('m1.cantidad')
+    .whereNotNull('m1.precio_unitario')
+    .whereNotExists(
+      db('movimientos as m2')
+        .whereRaw('m2.cuenta_id = m1.cuenta_id')
+        .whereNotNull('m2.cantidad')
+        .whereNotNull('m2.precio_unitario')
+        .where(function () {
+          this.where('m2.fecha', '>', db.raw('m1.fecha'))
+            .orWhere(function () {
+              this.where('m2.fecha', '=', db.raw('m1.fecha'))
+                .andWhere('m2.id', '>', db.raw('m1.id'));
+            });
+        })
+    )
+    .select('m1.cuenta_id', 'm1.cantidad', 'm1.precio_unitario');
+
+  const invMap = {};
+  for (const r of ultimosInversion) {
+    invMap[r.cuenta_id] = { cantidad: r.cantidad, precio_unitario: r.precio_unitario };
+  }
+
+  const result = balances.map((r) => ({
+    cuenta_id: r.cuenta_id,
+    balance: Number(r.ingresos || 0) - Number(r.gastos || 0),
+    cantidad: invMap[r.cuenta_id]?.cantidad ?? null,
+    precio_unitario: invMap[r.cuenta_id]?.precio_unitario ?? null,
+  }));
+
+  res.json(result);
+});
+
 router.get('/', async (req, res) => {
   const query = baseQuery();
 

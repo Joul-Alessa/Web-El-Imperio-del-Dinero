@@ -58,6 +58,11 @@ export class ApiService {
     return this.http.get<Cuenta[]>(`${API_URL}/cuentas`, { params: this.buildParams(filtros) });
   }
   getCuenta(id: number) { return this.http.get<Cuenta>(`${API_URL}/cuentas/${id}`); }
+  getCuentasResumen() {
+    return this.http.get<{ cuenta_id: number; balance: number; cantidad: number | null; precio_unitario: number | null }[]>(
+      `${API_URL}/cuentas/resumen`,
+    );
+  }
   getCuentaBalance(id: number, fecha: string, excludeMovimientoId?: number) {
     const params: Record<string, any> = { fecha };
     if (excludeMovimientoId != null) params['excludeMovimientoId'] = excludeMovimientoId;

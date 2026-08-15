@@ -4,6 +4,12 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { Cuenta, Persona, Institucion, Divisa, Instrumento } from '../core/models';
 
+interface CuentaResumen {
+  balance: number;
+  cantidad: number | null;
+  precio_unitario: number | null;
+}
+
 const TIPOS_CUENTA = ['efectivo', 'débito', 'crédito', 'apartado', 'inversión'];
 const TIPO_CUENTA_LABELS: Record<string, string> = {
   'efectivo': 'Efectivo',
@@ -76,7 +82,8 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
             <thead>
               <tr>
                 <th>Cuenta</th><th>Persona</th><th>Institución</th><th>Tipo</th>
-                <th>Instrumento</th><th>Divisa</th><th class="actions">Acciones</th>
+                <th>Instrumento</th><th>Divisa</th><th class="num">Balance</th>
+                <th class="num">Títulos</th><th class="num">Precio unit.</th><th class="actions">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +95,9 @@ const TIPO_CUENTA_LABELS: Record<string, string> = {
                   <td><span class="badge">{{ tipoLabels[c.tipo] || c.tipo }}</span></td>
                   <td>{{ c.instrumento_nombre || '—' }}</td>
                   <td><span class="badge badge-primary">{{ c.divisa_codigo }}</span></td>
+                  <td class="num">{{ c.divisa_simbolo }} {{ fmt(resumenMap()[c.id!]?.balance ?? 0) }}</td>
+                  <td class="num">{{ c.tipo === 'inversión' ? fmtOpt(resumenMap()[c.id!]?.cantidad) : '—' }}</td>
+                  <td class="num">{{ c.tipo === 'inversión' ? fmtOpt(resumenMap()[c.id!]?.precio_unitario) : '—' }}</td>
                   <td class="actions" style="text-align:right; white-space:nowrap">
                     <button class="btn btn-sm btn-ghost" (click)="openEdit(c)">✏️</button>
                     <label class="switch" title="{{ c.activo === 0 ? 'Activar' : 'Desactivar' }}">
@@ -180,6 +190,7 @@ export class CuentasComponent implements OnInit {
   instituciones = signal<Institucion[]>([]);
   divisas = signal<Divisa[]>([]);
   instrumentos = signal<Instrumento[]>([]);
+  resumenMap = signal<Record<number, CuentaResumen>>({});
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Cuenta>(this.blank());
@@ -225,15 +236,34 @@ export class CuentasComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.api.getCuentas({
-      persona_id: this.fPersona ? [this.fPersona] : undefined,
-      institucion_id: this.fInstitucion ? [this.fInstitucion] : undefined,
-      tipo: this.fTipo ?? undefined,
-      divisa_id: this.fDivisa ?? undefined,
+    forkJoin({
+      cuentas: this.api.getCuentas({
+        persona_id: this.fPersona ? [this.fPersona] : undefined,
+        institucion_id: this.fInstitucion ? [this.fInstitucion] : undefined,
+        tipo: this.fTipo ?? undefined,
+        divisa_id: this.fDivisa ?? undefined,
+      }),
+      resumen: this.api.getCuentasResumen(),
     }).subscribe({
-      next: (d) => { this.cuentas.set(d); this.loading.set(false); },
+      next: ({ cuentas, resumen }) => {
+        this.cuentas.set(cuentas);
+        const map: Record<number, CuentaResumen> = {};
+        for (const r of resumen) {
+          map[r.cuenta_id] = { balance: r.balance, cantidad: r.cantidad, precio_unitario: r.precio_unitario };
+        }
+        this.resumenMap.set(map);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
+  }
+
+  fmt(n: number): string {
+    return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  fmtOpt(n: number | null | undefined): string {
+    return n != null ? this.fmt(n) : '—';
   }
 
   clearFilters() {
