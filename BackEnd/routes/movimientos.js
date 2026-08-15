@@ -78,7 +78,8 @@ async function computeBalance(cuentaId, fecha, excludeMovimientoId = null) {
 // Translate a revalorización payload into a concrete {tipo, monto, ...} row.
 // Returns null when the delta is zero (no adjustment to record).
 async function resolveRevalorizacion(body, excludeMovimientoId = null) {
-  const { cuenta_id, valor_actual_nuevo, fecha, persona_id, divisa_id, descripcion } = body;
+  const { cuenta_id, valor_actual_nuevo, fecha, persona_id, divisa_id, descripcion,
+    cantidad, precio_unitario } = body;
   const cuenta = await db('cuentas_financieras').where('id', cuenta_id).first();
   if (!cuenta) return { error: { status: 404, message: 'Cuenta no encontrada' } };
 
@@ -103,8 +104,8 @@ async function resolveRevalorizacion(body, excludeMovimientoId = null) {
       monto: resultado.monto,
       divisa_id: divisa_id || cuenta.divisa_id,
       instrumento_id: null,
-      cantidad: null,
-      precio_unitario: null,
+      cantidad: cantidad ?? null,
+      precio_unitario: precio_unitario ?? null,
       descripcion: descripcion || `Revalorización: ${valorAnterior} → ${valor_actual_nuevo}`,
     },
     valorAnterior,

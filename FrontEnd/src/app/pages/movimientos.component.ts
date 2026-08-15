@@ -216,12 +216,27 @@ interface MovForm {
                 </div>
                 <div class="field">
                   <label>Nuevo valor actual</label>
-                  <input class="input" type="number" step="any" [(ngModel)]="form().valor_actual_nuevo" placeholder="0" />
+                  <input class="input" type="number" step="any" [ngModel]="form().valor_actual_nuevo" (ngModelChange)="onValorActualInput($event)" placeholder="0" />
                 </div>
                 <div class="field">
                   <label>Ajuste que se registrará</label>
                   <input class="input" [value]="revalPreview()" disabled />
                 </div>
+                @if (esInversion()) {
+                  <div class="field">
+                    <label>Cantidad (títulos)</label>
+                    <input class="input" type="number" step="any" [ngModel]="form().cantidad" (ngModelChange)="onCantidadInput($event)" placeholder="0" />
+                  </div>
+                  <div class="field">
+                    <label>Precio unitario</label>
+                    <input class="input" type="number" step="any" [ngModel]="form().precio_unitario" (ngModelChange)="onPrecioInput($event)" placeholder="0" />
+                  </div>
+                  @if (autoCalcHint()) {
+                    <div class="muted" style="grid-column:1 / -1; font-size:.78rem">
+                      ⚡ {{ autoCalcHint() }}
+                    </div>
+                  }
+                }
               } @else {
                 <!-- Row 3: Monto | Divisa -->
                 <div class="field">
@@ -235,29 +250,46 @@ interface MovForm {
                     @for (d of divisas(); track d.id) { <option [ngValue]="d.id">{{ d.codigo }}</option> }
                   </select>
                 </div>
-                <!-- Row 4: Instrumento (full-width) -->
                 @if (esInversion()) {
-                <div class="field" style="grid-column:1 / -1">
-                  <label>Instrumento (opcional)</label>
-                  <select class="select" [(ngModel)]="form().instrumento_id">
-                    <option [ngValue]="null">— Ninguno —</option>
-                    @for (ins of instrumentos(); track ins.id) { <option [ngValue]="ins.id">{{ ins.nombre }}</option> }
-                  </select>
-                </div>
-                <!-- Row 5: Cantidad | Precio unitario -->
-                <div class="field">
-                  <label>Cantidad (títulos, opcional)</label>
-                  <input class="input" type="number" step="any" [ngModel]="form().cantidad" (ngModelChange)="onCantidadInput($event)" placeholder="0" />
-                </div>
-                <div class="field">
-                  <label>Precio unitario (opcional)</label>
-                  <input class="input" type="number" step="any" [ngModel]="form().precio_unitario" (ngModelChange)="onPrecioInput($event)" placeholder="0" />
-                </div>
-                @if (autoCalcHint()) {
-                  <div class="muted" style="grid-column:1 / -1; font-size:.78rem">
-                    ⚡ {{ autoCalcHint() }}
+                  <!-- Balance posterior (informativo) -->
+                  <div class="field" style="grid-column:1 / -1">
+                    <div class="card" style="padding:12px 14px; background:var(--surface-2)">
+                      <div class="muted" style="font-size:.82rem">
+                        Valor de la cuenta tras el movimiento
+                      </div>
+                      <div style="font-size:1.2rem; font-weight:700">
+                        @if (!form().cuenta_id) {
+                          <span class="muted">Elige una cuenta</span>
+                        } @else if (balancePosterior() === null) {
+                          <span class="muted">{{ balanceAnterior() === null ? 'Calculando…' : 'Ingresa el monto' }}</span>
+                        } @else {
+                          {{ (selectedCuenta()?.divisa_simbolo ?? '') }} {{ fmt(balancePosterior()!) }}
+                        }
+                      </div>
+                    </div>
                   </div>
-                }
+                  <!-- Instrumento -->
+                  <div class="field" style="grid-column:1 / -1">
+                    <label>Instrumento (opcional)</label>
+                    <select class="select" [(ngModel)]="form().instrumento_id">
+                      <option [ngValue]="null">— Ninguno —</option>
+                      @for (ins of instrumentos(); track ins.id) { <option [ngValue]="ins.id">{{ ins.nombre }}</option> }
+                    </select>
+                  </div>
+                  <!-- Cantidad | Precio unitario -->
+                  <div class="field">
+                    <label>Cantidad (títulos)</label>
+                    <input class="input" type="number" step="any" [ngModel]="form().cantidad" (ngModelChange)="onCantidadInput($event)" placeholder="0" />
+                  </div>
+                  <div class="field">
+                    <label>Precio unitario</label>
+                    <input class="input" type="number" step="any" [ngModel]="form().precio_unitario" (ngModelChange)="onPrecioInput($event)" placeholder="0" />
+                  </div>
+                  @if (autoCalcHint()) {
+                    <div class="muted" style="grid-column:1 / -1; font-size:.78rem">
+                      ⚡ {{ autoCalcHint() }}
+                    </div>
+                  }
                 }
               }
 
@@ -317,10 +349,10 @@ export class MovimientosComponent implements OnInit {
   // the backend. `null` while pending or before a cuenta is chosen.
   balanceAnterior = signal<number | null>(null);
 
-  private lastAutoField = signal<'monto' | 'cantidad' | 'precio_unitario' | null>(null);
+  private lastAutoField = signal<'valor_actual_nuevo' | 'cantidad' | 'precio_unitario' | null>(null);
 
   private autoCalcLabels: Record<string, string> = {
-    monto: 'Monto',
+    valor_actual_nuevo: 'Nuevo valor actual',
     cantidad: 'Cantidad',
     precio_unitario: 'Precio unitario',
   };
@@ -331,11 +363,20 @@ export class MovimientosComponent implements OnInit {
     return `${this.autoCalcLabels[field]} calculado automáticamente — edítalo para desactivar`;
   });
 
+  balancePosterior = computed(() => {
+    const f = this.form();
+    const ba = this.balanceAnterior();
+    if (ba === null || !this.esInversion() || f.tipo === 'revalorizacion') return null;
+    if (f.monto == null) return null;
+    return f.tipo === 'gasto' ? ba - Math.abs(Number(f.monto)) : ba + Number(f.monto);
+  });
+
   constructor(private api: ApiService) {
-    // Refetch balance whenever cuenta / fecha / hora / tipo / id change (in reval mode).
     effect(() => {
       const f = this.form();
-      if (f.tipo !== 'revalorizacion' || !f.cuenta_id || !f.fecha) {
+      const esInv = this.esInversion();
+      const necesitaBalance = f.tipo === 'revalorizacion' || esInv;
+      if (!necesitaBalance || !f.cuenta_id || !f.fecha) {
         this.balanceAnterior.set(null);
         return;
       }
@@ -458,7 +499,7 @@ export class MovimientosComponent implements OnInit {
     }));
 
     const f = this.form();
-    if (cuenta?.tipo === 'inversión' && f.tipo !== 'revalorizacion' && !f.id) {
+    if (cuenta?.tipo === 'inversión' && !f.id) {
       this.lastAutoField.set(null);
       this.api.getUltimoMovInversion(id).subscribe((r) => {
         if (r.cantidad != null || r.precio_unitario != null) {
@@ -488,20 +529,33 @@ export class MovimientosComponent implements OnInit {
 
   onMontoInput(val: number | null) {
     this.form.update((f) => ({ ...f, monto: val }));
-    this.autoCalcInversion('monto');
+    this.autoCalcWithTotal('monto');
+  }
+
+  onValorActualInput(val: number | null) {
+    this.form.update((f) => ({ ...f, valor_actual_nuevo: val }));
+    this.autoCalcThreeWay('valor_actual_nuevo');
   }
 
   onCantidadInput(val: number | null) {
     this.form.update((f) => ({ ...f, cantidad: val }));
-    this.autoCalcInversion('cantidad');
+    if (this.form().tipo === 'revalorizacion') {
+      this.autoCalcThreeWay('cantidad');
+    } else {
+      this.autoCalcWithTotal('cantidad');
+    }
   }
 
   onPrecioInput(val: number | null) {
     this.form.update((f) => ({ ...f, precio_unitario: val }));
-    this.autoCalcInversion('precio_unitario');
+    if (this.form().tipo === 'revalorizacion') {
+      this.autoCalcThreeWay('precio_unitario');
+    } else {
+      this.autoCalcWithTotal('precio_unitario');
+    }
   }
 
-  private autoCalcInversion(changed: 'monto' | 'cantidad' | 'precio_unitario') {
+  private autoCalcThreeWay(changed: 'valor_actual_nuevo' | 'cantidad' | 'precio_unitario') {
     if (!this.esInversion()) return;
 
     if (changed === this.lastAutoField()) {
@@ -510,9 +564,10 @@ export class MovimientosComponent implements OnInit {
     }
 
     const f = this.form();
-    const fields: ('monto' | 'cantidad' | 'precio_unitario')[] = ['monto', 'cantidad', 'precio_unitario'];
+    type F = 'valor_actual_nuevo' | 'cantidad' | 'precio_unitario';
+    const fields: F[] = ['valor_actual_nuevo', 'cantidad', 'precio_unitario'];
     const current = this.lastAutoField();
-    let target = current && current !== changed ? current : null;
+    let target: F | null = current && current !== changed ? current as F : null;
 
     if (!target) {
       const filled = fields.filter((k) => f[k] != null);
@@ -523,15 +578,55 @@ export class MovimientosComponent implements OnInit {
 
     if (!target) return;
 
-    const m = f.monto, c = f.cantidad, p = f.precio_unitario;
+    const v = f.valor_actual_nuevo, c = f.cantidad, p = f.precio_unitario;
     let val: number | null = null;
 
-    if (target === 'monto' && c != null && p != null) {
+    if (target === 'valor_actual_nuevo' && c != null && p != null) {
       val = c * p;
-    } else if (target === 'cantidad' && m != null && p != null && p !== 0) {
-      val = m / p;
-    } else if (target === 'precio_unitario' && m != null && c != null && c !== 0) {
-      val = m / c;
+    } else if (target === 'cantidad' && v != null && p != null && p !== 0) {
+      val = v / p;
+    } else if (target === 'precio_unitario' && v != null && c != null && c !== 0) {
+      val = v / c;
+    }
+
+    if (val == null) return;
+
+    this.lastAutoField.set(target);
+    this.form.update((ff) => ({ ...ff, [target]: val }));
+  }
+
+  private autoCalcWithTotal(changed: 'monto' | 'cantidad' | 'precio_unitario') {
+    if (!this.esInversion() || this.form().tipo === 'revalorizacion') return;
+
+    if (changed === this.lastAutoField()) {
+      this.lastAutoField.set(null);
+      return;
+    }
+
+    const total = this.balancePosterior();
+    if (total == null) return;
+
+    const current = this.lastAutoField();
+    const f = this.form();
+    const c = f.cantidad, p = f.precio_unitario;
+
+    let target: 'cantidad' | 'precio_unitario' | null = null;
+
+    if (current === 'cantidad' || current === 'precio_unitario') {
+      target = current;
+    } else if (c != null && p == null) {
+      target = 'precio_unitario';
+    } else if (p != null && c == null) {
+      target = 'cantidad';
+    }
+
+    if (!target) return;
+
+    let val: number | null = null;
+    if (target === 'cantidad' && p != null && p !== 0) {
+      val = total / p;
+    } else if (target === 'precio_unitario' && c != null && c !== 0) {
+      val = total / c;
     }
 
     if (val == null) return;
@@ -592,6 +687,8 @@ export class MovimientosComponent implements OnInit {
         persona_id: f.persona_id!,
         divisa_id: f.divisa_id ?? undefined,
         descripcion: f.descripcion ?? undefined,
+        cantidad: f.cantidad,
+        precio_unitario: f.precio_unitario,
       };
       const req$ = f.id
         ? this.api.updateMovimiento(f.id, payload)

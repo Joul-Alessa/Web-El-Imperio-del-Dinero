@@ -87,6 +87,8 @@ export interface RevalorizacionPayload {
   persona_id: number;
   divisa_id?: number;
   descripcion?: string;
+  cantidad?: number | null;
+  precio_unitario?: number | null;
 }
 
 export interface MovimientoFiltros {
