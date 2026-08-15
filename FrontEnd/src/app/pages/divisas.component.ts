@@ -2,11 +2,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { Divisa } from '../core/models';
+import { ConfirmModalComponent } from '../shared/confirm-modal.component';
 
 @Component({
   selector: 'app-divisas',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ConfirmModalComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -78,6 +79,15 @@ import { Divisa } from '../core/models';
         </div>
       </div>
     }
+
+    <app-confirm-modal
+      [open]="showConfirm()"
+      title="Eliminar divisa"
+      [message]="'¿Eliminar &quot;' + (pendingDelete()?.nombre ?? '') + '&quot;?'"
+      confirmText="Eliminar"
+      (onConfirm)="confirmRemove()"
+      (onCancel)="showConfirm.set(false)"
+    />
   `,
 })
 export class DivisasComponent implements OnInit {
@@ -85,6 +95,8 @@ export class DivisasComponent implements OnInit {
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Divisa>({ codigo: '', nombre: '', simbolo: '' });
+  showConfirm = signal(false);
+  pendingDelete = signal<Divisa | null>(null);
 
   constructor(private api: ApiService) {}
 
@@ -110,7 +122,13 @@ export class DivisasComponent implements OnInit {
 
   remove(d: Divisa) {
     if (!d.id) return;
-    if (!confirm(`¿Eliminar "${d.nombre}"?`)) return;
-    this.api.deleteDivisa(d.id).subscribe(() => this.load());
+    this.pendingDelete.set(d);
+    this.showConfirm.set(true);
+  }
+
+  confirmRemove() {
+    const d = this.pendingDelete();
+    this.showConfirm.set(false);
+    if (d?.id) this.api.deleteDivisa(d.id).subscribe(() => this.load());
   }
 }

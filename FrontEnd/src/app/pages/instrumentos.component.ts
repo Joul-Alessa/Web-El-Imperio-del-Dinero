@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { Instrumento, Divisa, Institucion } from '../core/models';
+import { ConfirmModalComponent } from '../shared/confirm-modal.component';
 
 @Component({
   selector: 'app-instrumentos',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ConfirmModalComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -115,6 +116,15 @@ import { Instrumento, Divisa, Institucion } from '../core/models';
         </div>
       </div>
     }
+
+    <app-confirm-modal
+      [open]="showConfirm()"
+      title="Eliminar instrumento"
+      [message]="'¿Eliminar &quot;' + (pendingDelete()?.nombre ?? '') + '&quot;?'"
+      confirmText="Eliminar"
+      (onConfirm)="confirmRemove()"
+      (onCancel)="showConfirm.set(false)"
+    />
   `,
 })
 export class InstrumentosComponent implements OnInit {
@@ -124,6 +134,8 @@ export class InstrumentosComponent implements OnInit {
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Instrumento>(this.blank());
+  showConfirm = signal(false);
+  pendingDelete = signal<Instrumento | null>(null);
 
   constructor(private api: ApiService) {}
 
@@ -166,7 +178,13 @@ export class InstrumentosComponent implements OnInit {
 
   remove(i: Instrumento) {
     if (!i.id) return;
-    if (!confirm(`¿Eliminar "${i.nombre}"?`)) return;
-    this.api.deleteInstrumento(i.id).subscribe(() => this.load());
+    this.pendingDelete.set(i);
+    this.showConfirm.set(true);
+  }
+
+  confirmRemove() {
+    const i = this.pendingDelete();
+    this.showConfirm.set(false);
+    if (i?.id) this.api.deleteInstrumento(i.id).subscribe(() => this.load());
   }
 }

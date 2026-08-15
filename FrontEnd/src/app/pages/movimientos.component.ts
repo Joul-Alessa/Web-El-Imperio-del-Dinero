@@ -5,6 +5,7 @@ import { ApiService } from '../services/api.service';
 import {
   Movimiento, Persona, Cuenta, Divisa, Instrumento, Institucion, RevalorizacionPayload,
 } from '../core/models';
+import { ConfirmModalComponent } from '../shared/confirm-modal.component';
 
 interface MovForm {
   id?: number;
@@ -25,7 +26,7 @@ interface MovForm {
 @Component({
   selector: 'app-movimientos',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ConfirmModalComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -138,6 +139,25 @@ interface MovForm {
         </div>
       }
     </div>
+
+    <app-confirm-modal
+      [open]="showConfirm()"
+      title="Eliminar movimiento"
+      message="¿Eliminar este movimiento?"
+      confirmText="Eliminar"
+      (onConfirm)="confirmRemove()"
+      (onCancel)="showConfirm.set(false)"
+    />
+
+    <app-confirm-modal
+      [open]="showError()"
+      title="Error"
+      [message]="errorMsg()"
+      confirmText="Aceptar"
+      confirmClass="btn-primary"
+      (onConfirm)="showError.set(false)"
+      (onCancel)="showError.set(false)"
+    />
 
     @if (showForm()) {
       <div class="modal-backdrop" (click)="close()">
@@ -325,6 +345,11 @@ export class MovimientosComponent implements OnInit {
   loading = signal(true);
   showForm = signal(false);
   form = signal<MovForm>(this.blank());
+
+  showConfirm = signal(false);
+  pendingDelete = signal<Movimiento | null>(null);
+  showError = signal(false);
+  errorMsg = signal('');
 
   fPersona: number | null = null;
   fCuenta: number | null = null;
@@ -699,7 +724,10 @@ export class MovimientosComponent implements OnInit {
         : this.api.createMovimiento(payload);
       req$.subscribe({
         next: () => { this.close(); this.load(); },
-        error: (err) => alert(err?.error?.error ?? 'No se pudo guardar la revalorización.'),
+        error: (err) => {
+          this.errorMsg.set(err?.error?.error ?? 'No se pudo guardar la revalorización.');
+          this.showError.set(true);
+        },
       });
       return;
     }
@@ -715,8 +743,14 @@ export class MovimientosComponent implements OnInit {
 
   remove(m: Movimiento) {
     if (!m.id) return;
-    if (!confirm('¿Eliminar este movimiento?')) return;
-    this.api.deleteMovimiento(m.id).subscribe(() => this.load());
+    this.pendingDelete.set(m);
+    this.showConfirm.set(true);
+  }
+
+  confirmRemove() {
+    const m = this.pendingDelete();
+    this.showConfirm.set(false);
+    if (m?.id) this.api.deleteMovimiento(m.id).subscribe(() => this.load());
   }
 
   signed(m: Movimiento): number {

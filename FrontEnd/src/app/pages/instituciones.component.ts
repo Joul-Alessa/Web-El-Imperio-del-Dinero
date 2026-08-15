@@ -2,11 +2,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { Institucion } from '../core/models';
+import { ConfirmModalComponent } from '../shared/confirm-modal.component';
 
 @Component({
   selector: 'app-instituciones',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ConfirmModalComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -79,6 +80,15 @@ import { Institucion } from '../core/models';
         </div>
       </div>
     }
+
+    <app-confirm-modal
+      [open]="showConfirm()"
+      title="Eliminar institución"
+      [message]="'¿Eliminar &quot;' + (pendingDelete()?.nombre ?? '') + '&quot;?'"
+      confirmText="Eliminar"
+      (onConfirm)="confirmRemove()"
+      (onCancel)="showConfirm.set(false)"
+    />
   `,
 })
 export class InstitucionesComponent implements OnInit {
@@ -86,6 +96,8 @@ export class InstitucionesComponent implements OnInit {
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Institucion>({ nombre: '', tipo: null as any });
+  showConfirm = signal(false);
+  pendingDelete = signal<Institucion | null>(null);
 
   readonly tipoLabels: Record<string, string> = {
     banco: 'Banco',
@@ -118,7 +130,13 @@ export class InstitucionesComponent implements OnInit {
 
   remove(i: Institucion) {
     if (!i.id) return;
-    if (!confirm(`¿Eliminar "${i.nombre}"?`)) return;
-    this.api.deleteInstitucion(i.id).subscribe(() => this.load());
+    this.pendingDelete.set(i);
+    this.showConfirm.set(true);
+  }
+
+  confirmRemove() {
+    const i = this.pendingDelete();
+    this.showConfirm.set(false);
+    if (i?.id) this.api.deleteInstitucion(i.id).subscribe(() => this.load());
   }
 }

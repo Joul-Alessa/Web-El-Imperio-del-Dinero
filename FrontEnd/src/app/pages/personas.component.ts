@@ -2,11 +2,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { Persona } from '../core/models';
+import { ConfirmModalComponent } from '../shared/confirm-modal.component';
 
 @Component({
   selector: 'app-personas',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ConfirmModalComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -66,6 +67,15 @@ import { Persona } from '../core/models';
         </div>
       </div>
     }
+
+    <app-confirm-modal
+      [open]="showConfirm()"
+      title="Eliminar persona"
+      [message]="'¿Eliminar a &quot;' + (pendingDelete()?.nombre ?? '') + '&quot;?'"
+      confirmText="Eliminar"
+      (onConfirm)="confirmRemove()"
+      (onCancel)="showConfirm.set(false)"
+    />
   `,
 })
 export class PersonasComponent implements OnInit {
@@ -73,6 +83,8 @@ export class PersonasComponent implements OnInit {
   loading = signal(true);
   showForm = signal(false);
   editing = signal<Persona>({ nombre: '' });
+  showConfirm = signal(false);
+  pendingDelete = signal<Persona | null>(null);
 
   constructor(private api: ApiService) {}
 
@@ -98,7 +110,13 @@ export class PersonasComponent implements OnInit {
 
   remove(p: Persona) {
     if (!p.id) return;
-    if (!confirm(`¿Eliminar a "${p.nombre}"?`)) return;
-    this.api.deletePersona(p.id).subscribe(() => this.load());
+    this.pendingDelete.set(p);
+    this.showConfirm.set(true);
+  }
+
+  confirmRemove() {
+    const p = this.pendingDelete();
+    this.showConfirm.set(false);
+    if (p?.id) this.api.deletePersona(p.id).subscribe(() => this.load());
   }
 }
