@@ -253,6 +253,11 @@ interface MovForm {
                   <label>Precio unitario (opcional)</label>
                   <input class="input" type="number" step="any" [ngModel]="form().precio_unitario" (ngModelChange)="onPrecioInput($event)" placeholder="0" />
                 </div>
+                @if (autoCalcHint()) {
+                  <div class="muted" style="grid-column:1 / -1; font-size:.78rem">
+                    ⚡ {{ autoCalcHint() }}
+                  </div>
+                }
                 }
               }
 
@@ -312,7 +317,19 @@ export class MovimientosComponent implements OnInit {
   // the backend. `null` while pending or before a cuenta is chosen.
   balanceAnterior = signal<number | null>(null);
 
-  private lastAutoField: 'monto' | 'cantidad' | 'precio_unitario' | null = null;
+  private lastAutoField = signal<'monto' | 'cantidad' | 'precio_unitario' | null>(null);
+
+  private autoCalcLabels: Record<string, string> = {
+    monto: 'Monto',
+    cantidad: 'Cantidad',
+    precio_unitario: 'Precio unitario',
+  };
+
+  autoCalcHint = computed(() => {
+    const field = this.lastAutoField();
+    if (!field || !this.esInversion()) return null;
+    return `${this.autoCalcLabels[field]} calculado automáticamente — edítalo para desactivar`;
+  });
 
   constructor(private api: ApiService) {
     // Refetch balance whenever cuenta / fecha / hora / tipo / id change (in reval mode).
@@ -473,14 +490,15 @@ export class MovimientosComponent implements OnInit {
   private autoCalcInversion(changed: 'monto' | 'cantidad' | 'precio_unitario') {
     if (!this.esInversion()) return;
 
-    if (changed === this.lastAutoField) {
-      this.lastAutoField = null;
+    if (changed === this.lastAutoField()) {
+      this.lastAutoField.set(null);
       return;
     }
 
     const f = this.form();
     const fields: ('monto' | 'cantidad' | 'precio_unitario')[] = ['monto', 'cantidad', 'precio_unitario'];
-    let target = this.lastAutoField && this.lastAutoField !== changed ? this.lastAutoField : null;
+    const current = this.lastAutoField();
+    let target = current && current !== changed ? current : null;
 
     if (!target) {
       const filled = fields.filter((k) => f[k] != null);
@@ -504,7 +522,7 @@ export class MovimientosComponent implements OnInit {
 
     if (val == null) return;
 
-    this.lastAutoField = target;
+    this.lastAutoField.set(target);
     this.form.update((ff) => ({ ...ff, [target]: val }));
   }
 
@@ -523,10 +541,10 @@ export class MovimientosComponent implements OnInit {
     return `${delta > 0 ? 'Ingreso ' : 'Gasto '}${this.fmt(Math.abs(delta))}`;
   }
 
-  openCreate() { this.lastAutoField = null; this.form.set(this.blank()); this.showForm.set(true); }
+  openCreate() { this.lastAutoField.set(null); this.form.set(this.blank()); this.showForm.set(true); }
 
   openEdit(m: Movimiento) {
-    this.lastAutoField = null;
+    this.lastAutoField.set(null);
     const { fecha, hora } = this.splitDateTime(m.fecha);
     this.form.set({
       id: m.id, tipo: m.tipo, fecha, hora, persona_id: m.persona_id, cuenta_id: m.cuenta_id,
