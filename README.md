@@ -152,7 +152,7 @@ BackEnd/
     cuentas.js             # CRUD cuentas + balance
     movimientos.js         # CRUD movimientos + logica de revalorizacion
     historial.js           # Lectura del log de auditoria
-  migrations/              # 6 archivos de migracion Knex
+  migrations/              # 8 archivos de migracion Knex
   tests/
     balances.test.js       # Tests unitarios de lib/balances.js
 ```
@@ -195,7 +195,7 @@ Todos los endpoints estan bajo el prefijo `/api`. No hay autenticacion; CORS est
 
 | Metodo | Ruta                     | Descripcion                                    |
 |--------|--------------------------|------------------------------------------------|
-| GET    | `/api/instrumentos`      | Listar todos (con datos de divisa asociada)     |
+| GET    | `/api/instrumentos`      | Listar todos (con datos de divisa e institucion asociadas) |
 | GET    | `/api/instrumentos/:id`  | Obtener por ID                                  |
 | POST   | `/api/instrumentos`      | Crear (metadata se guarda como JSON)            |
 | PUT    | `/api/instrumentos/:id`  | Actualizar                                      |
@@ -264,6 +264,8 @@ Migraciones existentes:
 4. `20260803000000_convert_revalorizacion_to_ingreso_gasto.js` — Migra filas legacy de revalorizacion
 5. `20260803010000_cuenta_activo.js` — Agrega flag `activo` a cuentas
 6. `20260803020000_create_historial.js` — Crea tabla de auditoria
+7. `20260813000000_drop_cuenta_investment_fields.js` — Elimina campos `cantidad`, `valor_compra` y `valor_actual` de cuentas
+8. `20260813010000_instrumento_institucion_fk.js` — Convierte `institucion_origen` (texto) a FK `institucion_id` en instrumentos
 
 ---
 
