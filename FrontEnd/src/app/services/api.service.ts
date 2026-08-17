@@ -1,141 +1,94 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-
-export interface User {
-  id: number;
-  name: string;
-  createdAt: string;
-}
-
-export interface Institution {
-  id: number;
-  name: string;
-  icon: string | null;
-}
-
-export interface Account {
-  id: number;
-  userId: number;
-  institutionId: number;
-  name: string;
-  type: 'DEBIT' | 'CREDIT' | 'INVESTMENT' | 'CASH';
-  currency: string;
-  createdAt: string;
-}
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { API_URL } from '../core/api.config';
+import {
+  Persona, Institucion, Divisa, Instrumento, Cuenta, Movimiento,
+  RevalorizacionPayload, MovimientoFiltros, CuentaFiltros,
+  Historial, HistorialFiltros,
+} from '../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private base = '/api';
-
   constructor(private http: HttpClient) {}
 
-  getUsers() { return this.http.get<User[]>(`${this.base}/users`); }
-  createUser(name: string) { return this.http.post<User>(`${this.base}/users`, { name }); }
-  updateUser(id: number, name: string) { return this.http.put<User>(`${this.base}/users/${id}`, { name }); }
-  deleteUser(id: number) { return this.http.delete<{ message: string }>(`${this.base}/users/${id}`); }
-
-  getInstitutions() { return this.http.get<Institution[]>(`${this.base}/institutions`); }
-  createInstitution(name: string, icon?: string) { return this.http.post<Institution>(`${this.base}/institutions`, { name, icon }); }
-  updateInstitution(id: number, data: Partial<Institution>) { return this.http.put<Institution>(`${this.base}/institutions/${id}`, data); }
-  deleteInstitution(id: number) { return this.http.delete<{ message: string }>(`${this.base}/institutions/${id}`); }
-
-  getAccounts(params?: { userId?: number; institutionId?: number; type?: string }) {
-    const qs = new URLSearchParams();
-    if (params?.userId) qs.set('user_id', String(params.userId));
-    if (params?.institutionId) qs.set('institution_id', String(params.institutionId));
-    if (params?.type) qs.set('type', params.type);
-    const query = qs.toString();
-    return this.http.get<Account[]>(`${this.base}/accounts${query ? '?' + query : ''}`);
-  }
-  createAccount(data: { user_id: number; institution_id: number; name: string; type: string; currency?: string }) {
-    return this.http.post<Account>(`${this.base}/accounts`, data);
-  }
-  updateAccount(id: number, data: Partial<Account>) {
-    return this.http.put<Account>(`${this.base}/accounts/${id}`, data);
-  }
-  deleteAccount(id: number) { return this.http.delete<{ message: string }>(`${this.base}/accounts/${id}`); }
-  getBalance(id: number, from?: string, to?: string) {
-    const qs = new URLSearchParams();
-    if (from) qs.set('from', from);
-    if (to) qs.set('to', to);
-    const query = qs.toString();
-    return this.http.get<any>(`${this.base}/accounts/${id}/balance${query ? '?' + query : ''}`);
+  private buildParams(filtros: Record<string, any>): HttpParams {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(filtros)) {
+      if (value === undefined || value === null || value === '') continue;
+      if (Array.isArray(value)) {
+        for (const v of value) {
+          if (v !== undefined && v !== null && v !== '') {
+            params = params.append(key, String(v));
+          }
+        }
+      } else {
+        params = params.set(key, String(value));
+      }
+    }
+    return params;
   }
 
-  getCategories() { return this.http.get<Category[]>(`${this.base}/categories`); }
+  // ---------- Personas ----------
+  getPersonas(): Observable<Persona[]> { return this.http.get<Persona[]>(`${API_URL}/personas`); }
+  createPersona(p: Persona) { return this.http.post<Persona>(`${API_URL}/personas`, p); }
+  updatePersona(id: number, p: Persona) { return this.http.put<Persona>(`${API_URL}/personas/${id}`, p); }
+  deletePersona(id: number) { return this.http.delete(`${API_URL}/personas/${id}`); }
 
-  getTransactions(params?: { accountId?: number; categoryId?: number; from?: string; to?: string }) {
-    const qs = new URLSearchParams();
-    if (params?.accountId) qs.set('account_id', String(params.accountId));
-    if (params?.categoryId) qs.set('category_id', String(params.categoryId));
-    if (params?.from) qs.set('from', params.from);
-    if (params?.to) qs.set('to', params.to);
-    const query = qs.toString();
-    return this.http.get<Transaction[]>(`${this.base}/transactions${query ? '?' + query : ''}`);
-  }
-  createTransaction(data: { account_id: number; category_id?: number; amount: number; date: string; description?: string; destination_account_id?: number }) {
-    return this.http.post<Transaction>(`${this.base}/transactions`, data);
-  }
-  deleteTransaction(id: number) { return this.http.delete<{ message: string }>(`${this.base}/transactions/${id}`); }
+  // ---------- Instituciones ----------
+  getInstituciones(): Observable<Institucion[]> { return this.http.get<Institucion[]>(`${API_URL}/instituciones`); }
+  createInstitucion(i: Institucion) { return this.http.post<Institucion>(`${API_URL}/instituciones`, i); }
+  updateInstitucion(id: number, i: Institucion) { return this.http.put<Institucion>(`${API_URL}/instituciones/${id}`, i); }
+  deleteInstitucion(id: number) { return this.http.delete(`${API_URL}/instituciones/${id}`); }
 
-  getAssets() { return this.http.get<Asset[]>(`${this.base}/assets`); }
-  createAsset(data: { ticker: string; name: string; asset_type: string }) {
-    return this.http.post<Asset>(`${this.base}/assets`, data);
-  }
-  deleteAsset(id: number) { return this.http.delete<{ message: string }>(`${this.base}/assets/${id}`); }
+  // ---------- Divisas ----------
+  getDivisas(): Observable<Divisa[]> { return this.http.get<Divisa[]>(`${API_URL}/divisas`); }
+  createDivisa(d: Divisa) { return this.http.post<Divisa>(`${API_URL}/divisas`, d); }
+  updateDivisa(id: number, d: Divisa) { return this.http.put<Divisa>(`${API_URL}/divisas/${id}`, d); }
+  deleteDivisa(id: number) { return this.http.delete(`${API_URL}/divisas/${id}`); }
 
-  trade(data: { account_id: number; asset_id: number; transaction_type: string; quantity: number; price_per_unit: number; fee?: number; date: string }) {
-    return this.http.post<any>(`${this.base}/assets/trade`, data);
-  }
-  getTrades(accountId?: number) {
-    const qs = accountId ? '?account_id=' + accountId : '';
-    return this.http.get<any[]>(`${this.base}/assets/trade${qs}`);
-  }
+  // ---------- Instrumentos ----------
+  getInstrumentos(): Observable<Instrumento[]> { return this.http.get<Instrumento[]>(`${API_URL}/instrumentos`); }
+  createInstrumento(i: Instrumento) { return this.http.post<Instrumento>(`${API_URL}/instrumentos`, i); }
+  updateInstrumento(id: number, i: Instrumento) { return this.http.put<Instrumento>(`${API_URL}/instrumentos/${id}`, i); }
+  deleteInstrumento(id: number) { return this.http.delete(`${API_URL}/instrumentos/${id}`); }
 
-  revaluate(accountId: number, newBalance: number, notes?: string) {
-    return this.http.post<any>(`${this.base}/accounts/${accountId}/revaluate`, { new_balance: newBalance, notes });
+  // ---------- Cuentas ----------
+  getCuentas(filtros: CuentaFiltros = {}): Observable<Cuenta[]> {
+    return this.http.get<Cuenta[]>(`${API_URL}/cuentas`, { params: this.buildParams(filtros) });
   }
-  getRevaluations(accountId: number) {
-    return this.http.get<any[]>(`${this.base}/accounts/${accountId}/revaluations`);
+  getCuenta(id: number) { return this.http.get<Cuenta>(`${API_URL}/cuentas/${id}`); }
+  getCuentasResumen() {
+    return this.http.get<{ cuenta_id: number; balance: number; cantidad: number | null; precio_unitario: number | null }[]>(
+      `${API_URL}/cuentas/resumen`,
+    );
   }
-
-  getPortfolio(userId?: number) {
-    const qs = userId ? '?user_id=' + userId : '';
-    return this.http.get<any[]>(`${this.base}/portfolio/summary${qs}`);
+  getCuentaBalance(id: number, fecha: string, excludeMovimientoId?: number) {
+    const params: Record<string, any> = { fecha };
+    if (excludeMovimientoId != null) params['excludeMovimientoId'] = excludeMovimientoId;
+    return this.http.get<{ balance: number }>(`${API_URL}/cuentas/${id}/balance`, {
+      params: this.buildParams(params),
+    });
   }
-
-  getAnalytics(params?: { from?: string; to?: string; userId?: number; accountId?: number; accountType?: string; cumulative?: boolean }) {
-    const qs = new URLSearchParams();
-    if (params?.from) qs.set('from', params.from);
-    if (params?.to) qs.set('to', params.to);
-    if (params?.userId) qs.set('user_id', String(params.userId));
-    if (params?.accountId) qs.set('account_id', String(params.accountId));
-    if (params?.accountType) qs.set('account_type', params.accountType);
-    if (params?.cumulative) qs.set('cumulative', 'true');
-    const query = qs.toString();
-    return this.http.get<any>(`${this.base}/analytics/summary${query ? '?' + query : ''}`);
+  getUltimoMovInversion(cuentaId: number) {
+    return this.http.get<{ cantidad: number | null; precio_unitario: number | null }>(
+      `${API_URL}/cuentas/${cuentaId}/ultimo-movimiento-inversion`,
+    );
   }
-}
+  createCuenta(c: Cuenta) { return this.http.post<Cuenta>(`${API_URL}/cuentas`, c); }
+  updateCuenta(id: number, c: Cuenta) { return this.http.put<Cuenta>(`${API_URL}/cuentas/${id}`, c); }
+  deleteCuenta(id: number) { return this.http.delete(`${API_URL}/cuentas/${id}`); }
 
-export interface Category {
-  id: number;
-  name: string;
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
-}
+  // ---------- Movimientos ----------
+  getMovimientos(filtros: MovimientoFiltros = {}): Observable<Movimiento[]> {
+    return this.http.get<Movimiento[]>(`${API_URL}/movimientos`, { params: this.buildParams(filtros) });
+  }
+  createMovimiento(m: Movimiento | RevalorizacionPayload) { return this.http.post<any>(`${API_URL}/movimientos`, m); }
+  updateMovimiento(id: number, m: Movimiento | RevalorizacionPayload) { return this.http.put<any>(`${API_URL}/movimientos/${id}`, m); }
+  deleteMovimiento(id: number) { return this.http.delete(`${API_URL}/movimientos/${id}`); }
 
-export interface Transaction {
-  id: number;
-  accountId: number;
-  categoryId: number;
-  amount: number;
-  date: string;
-  description: string | null;
-  destinationAccountId: number | null;
-}
-
-export interface Asset {
-  id: number;
-  ticker: string;
-  name: string;
-  assetType: string;
+  // ---------- Historial ----------
+  getHistorial(filtros: HistorialFiltros = {}): Observable<Historial[]> {
+    return this.http.get<Historial[]>(`${API_URL}/historial`, { params: this.buildParams(filtros) });
+  }
 }
