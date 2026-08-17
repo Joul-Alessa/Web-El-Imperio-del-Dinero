@@ -2,22 +2,28 @@ services:
   backend:
     build:
       context: ./BackEnd
-      target: prod
+      target: dev
     environment:
       PORT: 3000
       DB_FILENAME: /app/data/imperio_del_dinero.sqlite3
+    ports:
+      - "3000:3000"
     volumes:
+      - ./BackEnd:/app
+      - /app/node_modules
       - sqlite_data:/app/data
-    expose:
-      - "3000"
     restart: unless-stopped
 
   frontend:
     build:
       context: ./FrontEnd
-      target: prod
+      target: dev
     ports:
-      - "80:80"
+      - "4200:4200"
+    volumes:
+      - ./FrontEnd:/app
+      - /app/node_modules
+      - /app/.angular
     depends_on:
       - backend
     restart: unless-stopped

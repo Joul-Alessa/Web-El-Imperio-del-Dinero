@@ -1,0 +1,10 @@
+services:
+  backend-test:
+    build:
+      context: ./BackEnd
+      target: test
+
+  frontend-test:
+    build:
+      context: ./FrontEnd
+      target: build
