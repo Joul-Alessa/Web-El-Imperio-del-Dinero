@@ -1,58 +1,28 @@
 services:
-  web-el-imperio-del-dinero-frontend:
+  backend:
     build:
-      context: ./frontend
+      context: ./BackEnd
       dockerfile: Dockerfile
-    container_name: web-el-imperio-del-dinero-frontend
+    image: imperio-dinero-backend:1.0.0
+    container_name: imperio-backend
     volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-    command: sh -c "npm install && ng serve --host 0.0.0.0 --port 4200 --poll 2000"
-    ports:
-      - "4200:4200"
+      - app-data:/app/data
     environment:
-      BROWSER: "none"
-      SHELL: "/bin/bash"
-      NODE_ENV: "local"
-      CHOKIDAR_USEPOLLING: "true"
-    depends_on:
-      - web-el-imperio-del-dinero-backend
+      - PORT=3000
+      - DB_PATH=/app/data/data.db
+    restart: unless-stopped
 
-  web-el-imperio-del-dinero-backend:
+  frontend:
     build:
-      context: ./backend
+      context: ./FrontEnd
       dockerfile: Dockerfile
-    container_name: web-el-imperio-del-dinero-backend
-    volumes:
-      - ./backend:/app
-      - backend_node_modules:/app/node_modules
-    command: sh -c "npm install && node index.js"
+    image: imperio-dinero-frontend:1.0.0
+    container_name: imperio-frontend
     ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: "local"
-      DB_HOST: "db"
-      DB_PORT: "5432"
-      DB_USER: "RolandoCunningham"
-      DB_PASSWORD: "WalterPope"
-      DB_NAME: "WebElImperioDelDineroDB"
+      - "80:80"
     depends_on:
-      - web-el-imperio-del-dinero-db
-
-  web-el-imperio-del-dinero-db:
-    image: postgres:16
-    container_name: web-el-imperio-del-dinero-db
-    restart: always
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: "RolandoCunningham"
-      POSTGRES_PASSWORD: "WalterPope"
-      POSTGRES_DB: "WebElImperioDelDineroDB"
+      - backend
+    restart: unless-stopped
 
 volumes:
-  frontend_node_modules:
-  backend_node_modules:
-  pgdata:
+  app-data:

@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: BackEnd/Dockerfile
+    image: el-imperio-del-dinero:1.0.0
+    container_name: imperio-dinero
+    ports:
+      - "3000:3000"
+    volumes:
+      - app-data:/app/data
+    environment:
+      - PORT=3000
+      - STATIC_DIR=/app/public
+    restart: unless-stopped
+
+volumes:
+  app-data:

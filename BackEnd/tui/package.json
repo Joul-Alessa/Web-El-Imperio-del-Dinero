@@ -1,0 +1,17 @@
+{
+  "name": "el-imperio-del-dinero-tui",
+  "version": "1.0.0",
+  "description": "Terminal UI para El Imperio del Dinero",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0"
+  }
+}
