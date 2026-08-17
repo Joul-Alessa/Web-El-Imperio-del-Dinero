@@ -1,11 +1,15 @@
-const express = require('express');
-const movements = require("../routes/movements");
-const accounts = require('../routes/accounts');
+import express from 'express';
 
-module.exports = function (app){
+import persons from '../routes/persons.js'; // personas
+import types from '../routes/types.js'; // tipos
+import accounts from '../routes/accounts.js'; // cuentas
+import movements from '../routes/movements.js';//movimientos
 
-    app.use(express.json());  
-     
-    app.use("/api/movements", movements);
-    app.use('/api/accounts', accounts);
+export default function (app){
+  app.use(express.json());  
+    
+  app.use('/api/persons', persons);
+  app.use('/api/types', types);
+  app.use('/api/accounts', accounts);
+  app.use('/api/movements', movements);
 }

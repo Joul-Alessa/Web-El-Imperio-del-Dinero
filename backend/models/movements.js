@@ -1,19 +1,20 @@
 import pool from '../startup/db.js';
 
-const AccountModel = {
+const MovementModel = {
   create: async (req) => {
     const query = `
-      INSERT INTO cuentas (nombre)
-      VALUES ($1)
+      INSERT INTO movimientos
+      (fecha, persona, tipo, cuenta, descripcion, monto)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *;
     `;
-    const { rows } = await pool.query(query, [req]);
+    const { rows } = await pool.query(query, [req.fecha, req.persona, req.tipo, req.cuenta, req.descripcion, req.monto]);
     return rows[0] || null;
   },
   findAll: async () => {
     const query = `
       SELECT *
-      FROM cuentas
+      FROM movimientos
       ORDER BY id;
     `;
     const { rows } = await pool.query(query);
@@ -22,7 +23,7 @@ const AccountModel = {
   findOne: async (id) => {
     const query = `
       SELECT *
-      FROM cuentas
+      FROM movimientos
       WHERE id = $1
       ORDER BY id;
     `;
@@ -31,17 +32,22 @@ const AccountModel = {
   },
   updateOne: async (req) => {
     const query = `
-      UPDATE cuentas
-      SET nombre = $2
+      UPDATE movimientos
+      SET fecha = $2,
+          persona = $3,
+          tipo = $4,
+          cuenta = $5,
+          descripcion = $6,
+          monto = $7
       WHERE id = $1
       RETURNING *;
     `;
-    const { rows } = await pool.query(query, [req.id, req.nombre]);
+    const { rows } = await pool.query(query, [req.id, req.fecha, req.persona, req.tipo, req.cuenta, req.descripcion, req.monto]);
     return rows[0] || null;
   },
   deleteOne: async (id) => {
     const query = `
-      DELETE FROM cuentas
+      DELETE FROM movimientos
       WHERE id = $1
       RETURNING *;
     `;
@@ -51,4 +57,4 @@ const AccountModel = {
   }
 };
 
-export default AccountModel;
+export default MovementModel;

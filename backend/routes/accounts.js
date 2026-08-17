@@ -1,18 +1,12 @@
-// Dependencias
-const express = require("express");
-const account = require("../controllers/accounts");
+import { Router } from 'express';
+import AccountController from '../controllers/accounts.js';
 
-// Inicializador del router
-const router = express.Router();
+const router = Router();
 
-// Manejo de rutas
-router.route("/")
-    .post(account.create)
-    .get(account.show);
+router.post('/', AccountController.create);
+router.get('/', AccountController.getAll);
+router.get('/:id', AccountController.getOne);
+router.put('/:id', AccountController.update);
+router.delete('/:id', AccountController.delete);
 
-router.route("/:id")
-    .get(account.showOne)
-    .put(account.update)
-    .delete(account.delete);
-
-module.exports = router;
+export default router;

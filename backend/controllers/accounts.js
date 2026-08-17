@@ -1,141 +1,152 @@
-const {Product, validateProduct} = require('../models/accounts');
-//const Joi = require('joi');
+import AccountModel from '../models/accounts.js';
 
-module.exports = {
-    create: async function(req, res)
-    {
-        try
-        {
-            // Validación de formato
-            const validation = validateProduct(req.body);
-            if(validation.error)
-            {
-                console.log("Error 400 (Bad Request): " + validation.error);
-                res.status(400).send(validation.error);
-            }
+const AccountController = {
+  create: async (req, res) => {
+    try {
+      const { nombre } = req.body;
 
-            // Creación del objeto a guardar
-            var product = new Product({
-                name: req.body.name,
-                description: req.body.description,
-                brand: req.body.brand,
-                grandfatherCategory: req.body.grandfatherCategory,
-                fatherCategory: req.body.fatherCategory,
-                sonCategory: req.body.sonCategory,
-                //image: req.body.image, //Descomentar aquí y en models otras dos líneas de image cuando el multer esté cargado
-                inventory: req.body.inventory,
-            });
-            await product.save();
+      if(nombre == null) {
+        return res.status(400).json({
+          message: 'Nombre de la cuenta inválido'
+        });
+      }
 
-            res.send(product);
-        }
-        catch(error)
-        {
-            console.log("Error: " + error);
-            res.status(500).send(error);
-        }
-    }//,
-    /*show: async function(req, res)
-    {
-        try
-        {
-            const products = await Product.find();
-            if(products.length > 0)
-            {
-                res.send(products);
-            }
-            else
-            {
-                res.status(404).send("Sin productos agregados");
-            }
-        }
-        catch(error)
-        {
-            console.log("Error: " + error);
-            res.status(500).send(error);
-        }
-    },
-    showOne: async function(req, res)
-    {
-        try
-        {
-            var product = await Product.findById(req.params.id);
-            
-            if (!product)
-            {
-                return res.status(404).send("Producto no encontrado.");
-            }
-            res.send(product);
-        }
-        catch(error)
-        {
-            console.log("Error: " + error);
-            res.status(500).send(error);
-        }
-    },
-    update: async function(req, res)
-    {
-        try
-        {
-            // Validación de formato
-            const validation = validateProduct(req.body);
-            if(validation.error)
-            {
-                console.log("Error 400 (Bad Request): " + validation.error);
-                res.status(400).send(validation.error);
-            }
+      const accounts = await AccountModel.create(nombre);
+      
+      return res.status(201).json({
+        message: 'Cuenta creada correctamente',
+        data: accounts
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: 'La cuenta no pudo ser creada'
+      });
+    }
+  },
+  getAll: async (req, res) => {
+    try {
+      const accounts = await AccountModel.findAll();
+      return res.status(200).json(accounts);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: 'Error al obtener cuentas'
+      });
+    }
+  },
+  getOne: async (req, res) => {
+    try {
+      const { id } = req.params;
 
-            // Búsqueda de la tupla
-            var product = await Product.findById(req.params.id);
-            
-            if (!product)
-            {
-                return res.status(404).send("Producto no encontrado.");
-            }
-            else
-            {
-                // Actualización de la tupla
-                var product = await Product.updateOne({ _id: req.params.id },
-                    {
-                        name: req.body.name,
-                        description: req.body.description,
-                        brand: req.body.brand,
-                        grandfatherCategory: req.body.grandfatherCategory,
-                        fatherCategory: req.body.fatherCategory,
-                        sonCategory: req.body.sonCategory,
-                        //image: req.body.image, //Descomentar aquí y en models otras dos líneas de image cuando el multer esté cargado
-                        inventory: req.body.inventory,
-                    });
+      if(id == null) {
+        return res.status(400).json({
+          message: 'Identificador de la cuenta inválido'
+        });
+      }
 
-                product = await Product.findById(req.params.id);
-                res.send(product);
-            }
-        }
-        catch(error)
-        {
-            console.log("Error: " + error);
-            res.status(500).send(error);
-        }
-    },
-    remove: async function(req, res)
-    {
-        try
-        {
-            var product = await Product.findByIdAndRemove(req.params.id);
+      const idNumber = Number(id);
 
-            if (!product)
-            {
-                return res.status(404).send("Producto no encontrado.");
-            }
-            else
-            {
-                res.send(product);
-            }
-        }
-        catch(error)
-        {
-            console.log("Error: " + error);
-            res.status(500).send(error);
-        }
-    }*/
-}
+      if (!Number.isInteger(idNumber) || idNumber <= 0) {
+        return res.status(400).json({
+          message: "El identificador debe ser un número entero positivo"
+        });
+      }
+      
+      const accounts = await AccountModel.findOne(id);
+
+      if(accounts != null) {
+        return res.status(200).json(accounts);
+      }
+
+      return res.status(204).json({
+        message: 'Cuenta no encontrada'
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: 'Error al obtener la cuenta'
+      });
+    }
+  },
+  update: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { nombre } = req.body;
+
+      if(id == null) {
+        return res.status(400).json({
+          message: 'Identificador de la cuenta inválido'
+        });
+      }
+
+      const idNumber = Number(id);
+
+      if (!Number.isInteger(idNumber) || idNumber <= 0) {
+        return res.status(400).json({
+          message: "El identificador debe ser un número entero positivo"
+        });
+      }
+
+      if(nombre == null) {
+        return res.status(400).json({
+          message: 'Nombre de la cuenta inválido'
+        });
+      }
+      
+      const accounts = await AccountModel.updateOne({
+        id: id,
+        nombre: nombre
+      });
+
+      if(accounts == null) {
+        return res.status(400).json({
+          message: 'No se modificó ninguna cuenta. No se encontró la cuenta'
+        });
+      }
+
+      return res.status(200).json(accounts);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: 'Error al obtener cuentas'
+      });
+    }
+  },
+  delete: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if(id == null) {
+        return res.status(400).json({
+          message: 'Identificador de la cuenta inválido'
+        });
+      }
+
+      const idNumber = Number(id);
+
+      if (!Number.isInteger(idNumber) || idNumber <= 0) {
+        return res.status(400).json({
+          message: "El identificador debe ser un número entero positivo"
+        });
+      }
+
+      const accounts = await AccountModel.deleteOne(id);
+
+      if(accounts == null) {
+        return res.status(400).json({
+          message: 'No se eliminó ninguna cuenta. No se encontró la cuenta'
+        });
+      }
+
+      return res.status(200).json(accounts);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: 'Error al obtener cuentas'
+      });
+    }
+  }
+};
+
+export default AccountController;

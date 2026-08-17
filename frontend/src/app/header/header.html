@@ -1,3 +1,13 @@
-<div class="header">
-  <h1 class="text-center py-2">El Imperio del Dinero</h1>
+<div class="header d-flex flex-row align-items-center">
+  <h2 class="position-absolute start-0 ms-3 icon-hover-effect" (click)="toggleTheme()">
+    @if (isDarkTheme) {
+        <i class="fa-solid fa-sun" title="Cambiar a modo claro"></i>
+    } @else {
+        <i class="fa-solid fa-moon" title="Cambiar a modo oscuro"></i>
+    }
+  </h2>
+  <h1 class="w-100 text-center py-2 px-5">El Imperio del Dinero</h1>
+  <h2 class="position-absolute end-0 me-3 icon-hover-effect" (click)="logIn()">
+    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+  </h2>
 </div>
