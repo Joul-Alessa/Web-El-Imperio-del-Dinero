@@ -109,6 +109,106 @@ docker compose up --build
 - Nginx sirve el SPA y hace proxy de `/api/` al backend.
 - La base de datos se persiste en un volumen Docker (`sqlite_data`).
 
+### Base de datos: insertar y extraer el archivo SQLite
+
+La aplicación en contenedor **no usa** el archivo `BackEnd/db/imperio_del_dinero.sqlite3` del disco cuando se levanta localmente. Tanto en desarrollo como en producción, el `DB_FILENAME` apunta a `/app/data/imperio_del_dinero.sqlite3` dentro del contenedor, y ese directorio está respaldado por el **volumen nombrado** `sqlite_data`. El archivo local de `BackEnd/db/` sólo sirve como fuente/destino para copiarlo con `docker cp`.
+
+> Nota: si se usa Podman, sustituir `docker compose` por `podman compose` en los comandos de `up`, y usar `podman cp` (con el nombre real del contenedor) en lugar de `docker compose cp`.
+
+#### Insertar el archivo local DENTRO del contenedor (sembrar/restaurar datos)
+
+El volumen se crea al levantar el servicio, asi que primero arrancas y luego copias:
+
+```bash
+# 1. Levanta el servicio (crea el volumen y genera una BD vacia con las migraciones)
+docker compose -f docker-compose.dev.yml up -d backend   # desarrollo
+# o bien, para produccion:
+docker compose up -d backend
+
+# 2. Deten el backend para que no tenga el archivo abierto
+docker compose -f docker-compose.dev.yml stop backend
+
+# 3. Copia tu archivo local al volumen, dentro del contenedor
+docker compose -f docker-compose.dev.yml cp ./BackEnd/db/imperio_del_dinero.sqlite3 backend:/app/data/imperio_del_dinero.sqlite3
+
+# 4. Reinicia el backend
+docker compose -f docker-compose.dev.yml start backend
+```
+
+Alternativa con `docker`/`podman` puro (obten el nombre del contenedor con `docker ps`):
+
+```bash
+docker cp ./BackEnd/db/imperio_del_dinero.sqlite3 <nombre_contenedor>:/app/data/imperio_del_dinero.sqlite3
+```
+
+#### Extraer el archivo del contenedor a tu equipo (visualizarlo)
+
+```bash
+# 1. Deten el backend para copiar un archivo consistente
+docker compose -f docker-compose.dev.yml stop backend
+
+# 2. Copia el archivo del volumen a tu disco local
+docker compose -f docker-compose.dev.yml cp backend:/app/data/imperio_del_dinero.sqlite3 ./BackEnd/db/imperio_del_dinero.sqlite3
+
+# 3. Reinicia el backend
+docker compose -f docker-compose.dev.yml start backend
+
+# 4. Abre BackEnd/db/imperio_del_dinero.sqlite3 con DB Browser for SQLite (u otro visor)
+```
+
+> Si prefieres verlo sin tocar la ruta del proyecto, cambia el destino del paso 2 a una copia aparte, por ejemplo `./copia_imperio.sqlite3`.
+
+#### Acceder al sitio desde otro dispositivo de la red (Podman en Windows)
+
+Podman en Windows corre dentro de una VM de WSL2. Los puertos publicados quedan enlazados a `127.0.0.1` en el host Windows, no a todas las interfaces, por lo que otros dispositivos de la red no pueden alcanzarlos directamente.
+
+**Opcion A — Port proxy temporal** (se pierde al reiniciar Windows, requiere PowerShell como administrador):
+
+```powershell
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=80 connectaddress=127.0.0.1 connectport=80
+```
+
+Para verificar que quedo activo:
+
+```powershell
+netsh interface portproxy show all
+```
+
+Para eliminarlo cuando ya no se necesite:
+
+```powershell
+netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=80
+```
+
+**Opcion B — Red espejada de WSL2** (permanente, recomendada): edita o crea `C:\Users\<tu-usuario>\.wslconfig` y agrega:
+
+```ini
+[wsl2]
+networkingMode=mirrored
+```
+
+Luego reinicia WSL2:
+
+```powershell
+wsl --shutdown
+```
+
+Con el modo espejado WSL2 comparte las interfaces de red de Windows, por lo que los puertos de Podman quedan accesibles desde la red local de forma automatica y sin configuracion adicional.
+
+> En ambos casos, accede desde el otro dispositivo con `http://<IP-local-de-tu-PC>`. Obtén tu IP local con `ipconfig` (busca la "Direccion IPv4" de tu adaptador WiFi o Ethernet).
+
+#### Recomendaciones de seguridad
+
+- **Deten siempre el servicio antes de `cp`** (entrada o salida). Asi evitas copiar un archivo a mitad de escritura y previenes bloqueos (file locks) de SQLite.
+- **No abras el archivo con el visor mientras el contenedor esta corriendo y escribiendo** en el. SQLite puede corruptarse si se escribe desde dos procesos a la vez. Si necesitas inspeccionarlo "en vivo", copialo a una copia aparte y abre esa.
+- El volumen `sqlite_data` persiste aunque reconstruyas las imagenes (`docker compose build`). Para empezar de cero (borrar la BD y el volumen):
+
+  ```bash
+  docker compose down -v
+  ```
+
+- Recuerda que `.dockerignore` excluye `db/*.sqlite3`, por lo que el archivo **no** se hornea en la imagen; el unico mecanismo para moverlo es `docker cp` (o un bind mount, si decides cambiar de estrategia).
+
 ---
 
 ## Variables de entorno

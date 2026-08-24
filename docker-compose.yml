@@ -4,6 +4,7 @@ services:
       context: ./BackEnd
       target: prod
     environment:
+      HOST: "0.0.0.0"
       PORT: 3000
       DB_FILENAME: /app/data/imperio_del_dinero.sqlite3
     volumes:
@@ -16,8 +17,10 @@ services:
     build:
       context: ./FrontEnd
       target: prod
+    environment:
+      HOST: "0.0.0.0"
     ports:
-      - "80:80"
+      - "0.0.0.0:8080:80"
     depends_on:
       - backend
     restart: unless-stopped

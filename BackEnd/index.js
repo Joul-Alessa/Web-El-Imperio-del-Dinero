@@ -14,4 +14,5 @@ app.use('/api/movimientos', require('./routes/movimientos'));
 app.use('/api/historial', require('./routes/historial'));
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
