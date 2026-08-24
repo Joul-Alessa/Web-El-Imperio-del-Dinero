@@ -483,11 +483,19 @@ export class MovimientosComponent implements OnInit {
 
   blank(): MovForm {
     return {
-      tipo: 'ingreso', fecha: new Date().toISOString().slice(0, 10), hora: '00:00',
+      tipo: 'ingreso', fecha: this.hoyLocal(), hora: '00:00',
       persona_id: null, cuenta_id: null, monto: null, divisa_id: null,
       instrumento_id: null, cantidad: null, precio_unitario: null,
       descripcion: null, valor_actual_nuevo: null,
     };
+  }
+
+  // Fecha de HOY en horario local en formato YYYY-MM-DD. Se evita
+  // toISOString() porque devuelve UTC y adelanta el día en husos negativos.
+  private hoyLocal(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   private splitDateTime(dt: string): { fecha: string; hora: string } {
