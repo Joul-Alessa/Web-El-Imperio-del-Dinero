@@ -20,7 +20,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
-  && npm ci
+  && npm ci --build-from-source=sqlite3
 
 # ---------- PRODUCTION ----------
 FROM node:22.12.0-slim AS prod

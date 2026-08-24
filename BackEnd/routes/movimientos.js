@@ -22,41 +22,91 @@ function baseQuery() {
     );
 }
 
+// Aplica los filtros de búsqueda comunes sobre una consulta de movimientos.
+// La consulta debe tener el alias `m` (movimientos) y, para el filtro de
+// institución, el join a `cuentas_financieras as c`.
+function applyMovimientoFilters(query, q) {
+  if (q.persona_id) {
+    query.whereIn('m.persona_id', [].concat(q.persona_id));
+  }
+  if (q.cuenta_id) {
+    query.whereIn('m.cuenta_id', [].concat(q.cuenta_id));
+  }
+  if (q.tipo) {
+    query.where('m.tipo', q.tipo);
+  }
+  if (q.fecha_desde) {
+    query.where('m.fecha', '>=', q.fecha_desde);
+  }
+  if (q.fecha_hasta) {
+    query.where('m.fecha', '<=', q.fecha_hasta);
+  }
+  if (q.institucion_id) {
+    query.whereIn('c.institucion_id', [].concat(q.institucion_id));
+  }
+  if (q.instrumento_id) {
+    query.where('m.instrumento_id', q.instrumento_id);
+  }
+  if (q.divisa_id) {
+    query.where('m.divisa_id', q.divisa_id);
+  }
+  // Búsqueda de coincidencias por descripción. Vacío = no filtra.
+  const busqueda = (q.busqueda || '').trim();
+  if (busqueda) {
+    query.where('m.descripcion', 'like', `%${busqueda}%`);
+  }
+  return query;
+}
+
+// Consulta base solo con el join necesario para contar/agregar aplicando los
+// mismos filtros (sin los select ni joins de detalle que no hacen falta).
+function movimientosFilterQuery() {
+  return db('movimientos as m')
+    .join('cuentas_financieras as c', 'm.cuenta_id', 'c.id');
+}
+
 router.get('/', async (req, res) => {
-  const query = baseQuery();
-
-  if (req.query.persona_id) {
-    const ids = [].concat(req.query.persona_id);
-    query.whereIn('m.persona_id', ids);
-  }
-  if (req.query.cuenta_id) {
-    const ids = [].concat(req.query.cuenta_id);
-    query.whereIn('m.cuenta_id', ids);
-  }
-  if (req.query.tipo) {
-    query.where('m.tipo', req.query.tipo);
-  }
-  if (req.query.fecha_desde) {
-    query.where('m.fecha', '>=', req.query.fecha_desde);
-  }
-  if (req.query.fecha_hasta) {
-    query.where('m.fecha', '<=', req.query.fecha_hasta);
-  }
-  if (req.query.institucion_id) {
-    const ids = [].concat(req.query.institucion_id);
-    query.whereIn('c.institucion_id', ids);
-  }
-  if (req.query.instrumento_id) {
-    query.where('m.instrumento_id', req.query.instrumento_id);
-  }
-  if (req.query.divisa_id) {
-    query.where('m.divisa_id', req.query.divisa_id);
-  }
-
+  const query = applyMovimientoFilters(baseQuery(), req.query);
   query.orderBy('m.fecha', 'desc').orderBy('m.id', 'desc');
 
   const rows = await query;
   res.json(rows);
+});
+
+// Endpoint paginado: devuelve una página de resultados junto con el total de
+// registros que coinciden con los filtros y los totales de ingresos/gastos
+// sobre TODO el conjunto filtrado (no solo la página actual).
+router.get('/paginado', async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const pageSize = Math.min(500, Math.max(1, parseInt(req.query.pageSize, 10) || 50));
+  const offset = (page - 1) * pageSize;
+
+  const dataQuery = applyMovimientoFilters(baseQuery(), req.query)
+    .orderBy('m.fecha', 'desc')
+    .orderBy('m.id', 'desc')
+    .limit(pageSize)
+    .offset(offset);
+
+  const totalQuery = applyMovimientoFilters(movimientosFilterQuery(), req.query)
+    .count({ count: 'm.id' })
+    .first();
+
+  const totalsQuery = applyMovimientoFilters(movimientosFilterQuery(), req.query)
+    .select('m.tipo')
+    .sum({ total: 'm.monto' })
+    .groupBy('m.tipo');
+
+  const [data, totalRow, totalsRows] = await Promise.all([dataQuery, totalQuery, totalsQuery]);
+
+  const total = Number(totalRow?.count ?? 0);
+  let totalIngresos = 0;
+  let totalGastos = 0;
+  for (const r of totalsRows) {
+    if (r.tipo === 'ingreso') totalIngresos = Number(r.total) || 0;
+    else if (r.tipo === 'gasto') totalGastos = Number(r.total) || 0;
+  }
+
+  res.json({ data, total, page, pageSize, totalIngresos, totalGastos });
 });
 
 router.get('/:id', async (req, res) => {

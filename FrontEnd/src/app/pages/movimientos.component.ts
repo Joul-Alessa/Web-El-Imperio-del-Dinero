@@ -38,7 +38,14 @@ interface MovForm {
       </div>
 
       <!-- Filtros -->
-      <div class="card filters">
+      <div class="card" style="padding:18px; margin-bottom:20px">
+        <!-- Búsqueda: renglón propio de ancho completo -->
+        <div class="field" style="margin-bottom:14px">
+          <label>Buscar en descripción</label>
+          <input class="input" type="text" [(ngModel)]="fBusqueda" (ngModelChange)="onBusquedaChange()" placeholder="Texto libre…" />
+        </div>
+        <!-- Resto de filtros: se acomodan dinámicamente y saltan de renglón si no caben -->
+        <div class="filters" style="padding:0; margin:0">
         <div class="field">
           <label>Persona</label>
           <select class="select" [ngModel]="fPersona" (ngModelChange)="onFPersonaChange($event)">
@@ -55,14 +62,14 @@ interface MovForm {
         </div>
         <div class="field">
           <label>Institución</label>
-          <select class="select" [(ngModel)]="fInstitucion" (ngModelChange)="load()">
+          <select class="select" [(ngModel)]="fInstitucion" (ngModelChange)="resetAndLoad()">
             <option [ngValue]="null">Todas</option>
             @for (i of instituciones(); track i.id) { <option [ngValue]="i.id">{{ i.nombre }}</option> }
           </select>
         </div>
         <div class="field">
           <label>Tipo</label>
-          <select class="select" [(ngModel)]="fTipo" (ngModelChange)="load()">
+          <select class="select" [(ngModel)]="fTipo" (ngModelChange)="resetAndLoad()">
             <option [ngValue]="null">Todos</option>
             <option value="ingreso">Ingreso</option>
             <option value="gasto">Gasto</option>
@@ -70,24 +77,25 @@ interface MovForm {
         </div>
         <div class="field">
           <label>Desde</label>
-          <input class="input" type="date" [(ngModel)]="fDesde" (ngModelChange)="load()" />
+          <input class="input" type="date" [(ngModel)]="fDesde" (ngModelChange)="resetAndLoad()" />
         </div>
         <div class="field">
           <label>Hasta</label>
-          <input class="input" type="date" [(ngModel)]="fHasta" (ngModelChange)="load()" />
+          <input class="input" type="date" [(ngModel)]="fHasta" (ngModelChange)="resetAndLoad()" />
         </div>
         <div class="field">
           <label>&nbsp;</label>
           <button class="btn" (click)="clearFilters()">Limpiar filtros</button>
         </div>
+        </div>
       </div>
 
       <!-- Resumen -->
-      @if (!loading() && movimientos().length) {
+      @if (!loading() && total()) {
         <div class="chip-row" style="margin-bottom:16px">
           <span class="badge badge-primary">Ingresos: {{ fmt(totalIngresos()) }}</span>
           <span class="badge badge-danger">Gastos: {{ fmt(totalGastos()) }}</span>
-          <span class="badge">{{ movimientos().length }} movimientos</span>
+          <span class="badge">{{ total() }} movimientos</span>
         </div>
       }
 
@@ -136,6 +144,29 @@ interface MovForm {
               }
             </tbody>
           </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="flex" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px">
+          <div class="muted" style="font-size:.85rem">
+            Mostrando {{ rangoDesde() }}–{{ rangoHasta() }} de {{ total() }}
+          </div>
+          <div class="flex" style="align-items:center; flex-wrap:wrap; gap:8px">
+            <button class="btn btn-sm" [disabled]="page() <= 1" (click)="goToPage(1)">« Primera</button>
+            <button class="btn btn-sm" [disabled]="page() <= 1" (click)="goToPage(page() - 1)">‹ Anterior</button>
+            <select class="select" [ngModel]="page()" (ngModelChange)="goToPage($event)" style="width:auto">
+              @for (n of pages(); track n) {
+                <option [ngValue]="n">Página {{ n }} de {{ totalPages() }}</option>
+              }
+            </select>
+            <button class="btn btn-sm" [disabled]="page() >= totalPages()" (click)="goToPage(page() + 1)">Siguiente ›</button>
+            <button class="btn btn-sm" [disabled]="page() >= totalPages()" (click)="goToPage(totalPages())">Última »</button>
+            <select class="select" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)" style="width:auto">
+              @for (s of pageSizeOpciones; track s) {
+                <option [ngValue]="s">{{ s }} por página</option>
+              }
+            </select>
+          </div>
         </div>
       }
     </div>
@@ -357,6 +388,23 @@ export class MovimientosComponent implements OnInit {
   fTipo: string | null = null;
   fDesde: string | null = null;
   fHasta: string | null = null;
+  fBusqueda: string = '';
+  private busquedaTimer: any = null;
+
+  // Paginación
+  page = signal(1);
+  pageSize = signal(50);
+  total = signal(0);
+  pageSizeOpciones = [25, 50, 100, 200];
+
+  // Totales de ingresos/gastos sobre TODO el conjunto filtrado (backend).
+  totalIngresos = signal(0);
+  totalGastos = signal(0);
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
+  pages = computed(() => Array.from({ length: this.totalPages() }, (_, i) => i + 1));
+  rangoDesde = computed(() => (this.total() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1));
+  rangoHasta = computed(() => Math.min(this.page() * this.pageSize(), this.total()));
 
   selectedCuenta = computed(() => this.cuentas().find((c) => c.id === this.form().cuenta_id));
 
@@ -372,9 +420,6 @@ export class MovimientosComponent implements OnInit {
     if (pid != null) list = list.filter((c) => c.persona_id === pid);
     return list;
   });
-
-  totalIngresos = computed(() => this.sum('ingreso'));
-  totalGastos = computed(() => this.sum('gasto'));
 
   // Balance of the selected cuenta before the form's fecha+hora, fetched from
   // the backend. `null` while pending or before a cuenta is chosen.
@@ -438,11 +483,19 @@ export class MovimientosComponent implements OnInit {
 
   blank(): MovForm {
     return {
-      tipo: 'ingreso', fecha: new Date().toISOString().slice(0, 10), hora: '00:00',
+      tipo: 'ingreso', fecha: this.hoyLocal(), hora: '00:00',
       persona_id: null, cuenta_id: null, monto: null, divisa_id: null,
       instrumento_id: null, cantidad: null, precio_unitario: null,
       descripcion: null, valor_actual_nuevo: null,
     };
+  }
+
+  // Fecha de HOY en horario local en formato YYYY-MM-DD. Se evita
+  // toISOString() porque devuelve UTC y adelanta el día en husos negativos.
+  private hoyLocal(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   private splitDateTime(dt: string): { fecha: string; hora: string } {
@@ -461,23 +514,62 @@ export class MovimientosComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.api.getMovimientos({
+    this.api.getMovimientosPaginado({
       persona_id: this.fPersona ? [this.fPersona] : undefined,
       cuenta_id: this.fCuenta ? [this.fCuenta] : undefined,
       institucion_id: this.fInstitucion ? [this.fInstitucion] : undefined,
       tipo: this.fTipo ?? undefined,
       fecha_desde: this.fDesde ?? undefined,
       fecha_hasta: this.fHasta ? `${this.fHasta}T23:59:59` : undefined,
+      busqueda: this.fBusqueda.trim() || undefined,
+      page: this.page(),
+      pageSize: this.pageSize(),
     }).subscribe({
-      next: (d) => { this.movimientos.set(d); this.loading.set(false); },
+      next: (r) => {
+        this.movimientos.set(r.data);
+        this.total.set(r.total);
+        this.totalIngresos.set(r.totalIngresos);
+        this.totalGastos.set(r.totalGastos);
+        // Si la página actual quedó fuera de rango (p.ej. tras borrar), reajusta.
+        if (this.page() > this.totalPages()) {
+          this.page.set(this.totalPages());
+          this.load();
+          return;
+        }
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
   }
 
+  // Recarga desde la primera página (para cualquier cambio de filtro).
+  resetAndLoad() {
+    this.page.set(1);
+    this.load();
+  }
+
+  onBusquedaChange() {
+    // Debounce para no lanzar una consulta por cada tecla.
+    if (this.busquedaTimer) clearTimeout(this.busquedaTimer);
+    this.busquedaTimer = setTimeout(() => this.resetAndLoad(), 350);
+  }
+
+  goToPage(n: number) {
+    const target = Math.min(Math.max(1, n || 1), this.totalPages());
+    if (target === this.page()) return;
+    this.page.set(target);
+    this.load();
+  }
+
+  onPageSizeChange(size: number) {
+    this.pageSize.set(Number(size) || 50);
+    this.resetAndLoad();
+  }
+
   clearFilters() {
     this.fPersona = null; this.fCuenta = null; this.fInstitucion = null;
-    this.fTipo = null; this.fDesde = null; this.fHasta = null;
-    this.load();
+    this.fTipo = null; this.fDesde = null; this.fHasta = null; this.fBusqueda = '';
+    this.resetAndLoad();
   }
 
   // Filtro: cuentas visibles en el select "Cuenta". Si hay persona filtrada,
@@ -500,7 +592,7 @@ export class MovimientosComponent implements OnInit {
       const cuenta = this.cuentas().find((c) => c.id === this.fCuenta);
       if (cuenta && cuenta.persona_id !== id) this.fCuenta = null;
     }
-    this.load();
+    this.resetAndLoad();
   }
 
   onFCuentaChange(id: number | null) {
@@ -509,11 +601,7 @@ export class MovimientosComponent implements OnInit {
       const cuenta = this.cuentas().find((c) => c.id === id);
       if (cuenta) this.fPersona = cuenta.persona_id;
     }
-    this.load();
-  }
-
-  sum(tipo: string): number {
-    return this.movimientos().filter((m) => m.tipo === tipo).reduce((a, m) => a + Number(m.monto), 0);
+    this.resetAndLoad();
   }
 
   setTipo(t: string) { this.form.update((f) => ({ ...f, tipo: t })); }

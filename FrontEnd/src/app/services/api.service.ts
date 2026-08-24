@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { API_URL } from '../core/api.config';
 import {
   Persona, Institucion, Divisa, Instrumento, Cuenta, Movimiento,
-  RevalorizacionPayload, MovimientoFiltros, CuentaFiltros,
+  RevalorizacionPayload, MovimientoFiltros, MovimientosPaginados, CuentaFiltros,
   Historial, HistorialFiltros,
 } from '../core/models';
 
@@ -82,6 +82,9 @@ export class ApiService {
   // ---------- Movimientos ----------
   getMovimientos(filtros: MovimientoFiltros = {}): Observable<Movimiento[]> {
     return this.http.get<Movimiento[]>(`${API_URL}/movimientos`, { params: this.buildParams(filtros) });
+  }
+  getMovimientosPaginado(filtros: MovimientoFiltros = {}): Observable<MovimientosPaginados> {
+    return this.http.get<MovimientosPaginados>(`${API_URL}/movimientos/paginado`, { params: this.buildParams(filtros) });
   }
   createMovimiento(m: Movimiento | RevalorizacionPayload) { return this.http.post<any>(`${API_URL}/movimientos`, m); }
   updateMovimiento(id: number, m: Movimiento | RevalorizacionPayload) { return this.http.put<any>(`${API_URL}/movimientos/${id}`, m); }
