@@ -100,6 +100,18 @@ export interface MovimientoFiltros {
   fecha_hasta?: string;
   instrumento_id?: number | string;
   divisa_id?: number | string;
+  busqueda?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface MovimientosPaginados {
+  data: Movimiento[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalIngresos: number;
+  totalGastos: number;
 }
 
 export interface Historial {
