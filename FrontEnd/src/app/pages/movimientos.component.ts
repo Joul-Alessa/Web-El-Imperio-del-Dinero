@@ -38,7 +38,14 @@ interface MovForm {
       </div>
 
       <!-- Filtros -->
-      <div class="card filters">
+      <div class="card" style="padding:18px; margin-bottom:20px">
+        <!-- Búsqueda: renglón propio de ancho completo -->
+        <div class="field" style="margin-bottom:14px">
+          <label>Buscar en descripción</label>
+          <input class="input" type="text" [(ngModel)]="fBusqueda" (ngModelChange)="onBusquedaChange()" placeholder="Texto libre…" />
+        </div>
+        <!-- Resto de filtros: se acomodan dinámicamente y saltan de renglón si no caben -->
+        <div class="filters" style="padding:0; margin:0">
         <div class="field">
           <label>Persona</label>
           <select class="select" [ngModel]="fPersona" (ngModelChange)="onFPersonaChange($event)">
@@ -76,13 +83,10 @@ interface MovForm {
           <label>Hasta</label>
           <input class="input" type="date" [(ngModel)]="fHasta" (ngModelChange)="resetAndLoad()" />
         </div>
-        <div class="field" style="flex:1; min-width:200px">
-          <label>Buscar en descripción</label>
-          <input class="input" type="text" [(ngModel)]="fBusqueda" (ngModelChange)="onBusquedaChange()" placeholder="Texto libre…" />
-        </div>
         <div class="field">
           <label>&nbsp;</label>
           <button class="btn" (click)="clearFilters()">Limpiar filtros</button>
+        </div>
         </div>
       </div>
 
