@@ -115,12 +115,22 @@ router.get('/:id', async (req, res) => {
   res.json(row);
 });
 
-// Compute the balance of a cuenta strictly before a given moment, optionally
-// excluding a movement (used when editing a movement — it must not count
-// against its own recomputation).
+// Compute the balance of a cuenta up to a given moment, including movements at
+// the same fecha but only those with a lower id (i.e. created before). When
+// editing, excludeMovimientoId ensures the movement being edited and any later
+// ones at the same fecha don't count.
 async function computeBalance(cuentaId, fecha, excludeMovimientoId = null) {
-  const q = db('movimientos').where('cuenta_id', cuentaId).where('fecha', '<', fecha);
-  if (excludeMovimientoId != null) q.andWhere('id', '!=', excludeMovimientoId);
+  const q = db('movimientos').where('cuenta_id', cuentaId);
+  if (excludeMovimientoId != null) {
+    q.where(function () {
+      this.where('fecha', '<', fecha)
+        .orWhere(function () {
+          this.where('fecha', '=', fecha).andWhere('id', '<', excludeMovimientoId);
+        });
+    });
+  } else {
+    q.where('fecha', '<=', fecha);
+  }
   const rows = await q.select('tipo', 'monto');
   return calcularBalance(rows);
 }

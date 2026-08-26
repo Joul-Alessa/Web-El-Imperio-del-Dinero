@@ -88,13 +88,21 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
-// Balance of a cuenta at a given moment: sum of ingresos minus gastos over
-// movements strictly earlier than `fecha`. Pass `excludeMovimientoId` when
-// editing so the movement being edited doesn't count against itself.
+// Balance of a cuenta up to a given moment: sum of ingresos minus gastos over
+// movements at or before `fecha`. When `excludeMovimientoId` is passed (editing),
+// only movements with a lower id at the same fecha are included.
 router.get('/:id/balance', async (req, res) => {
   const q = db('movimientos').where('cuenta_id', req.params.id);
-  if (req.query.fecha) q.where('fecha', '<', req.query.fecha);
-  if (req.query.excludeMovimientoId) q.andWhere('id', '!=', req.query.excludeMovimientoId);
+  if (req.query.excludeMovimientoId) {
+    q.where(function () {
+      this.where('fecha', '<', req.query.fecha)
+        .orWhere(function () {
+          this.where('fecha', '=', req.query.fecha).andWhere('id', '<', req.query.excludeMovimientoId);
+        });
+    });
+  } else if (req.query.fecha) {
+    q.where('fecha', '<=', req.query.fecha);
+  }
   const rows = await q.select('tipo', 'monto');
   res.json({ balance: calcularBalance(rows) });
 });
