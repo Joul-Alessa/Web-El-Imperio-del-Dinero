@@ -12,6 +12,7 @@ app.use('/api/instrumentos', require('./routes/instrumentos'));
 app.use('/api/cuentas', require('./routes/cuentas'));
 app.use('/api/movimientos', require('./routes/movimientos'));
 app.use('/api/historial', require('./routes/historial'));
+app.use('/api/respaldo', require('./routes/respaldo'));
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';

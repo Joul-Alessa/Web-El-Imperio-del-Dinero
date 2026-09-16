@@ -90,6 +90,11 @@ export class ApiService {
   updateMovimiento(id: number, m: Movimiento | RevalorizacionPayload) { return this.http.put<any>(`${API_URL}/movimientos/${id}`, m); }
   deleteMovimiento(id: number) { return this.http.delete(`${API_URL}/movimientos/${id}`); }
 
+  // ---------- Respaldo ----------
+  downloadRespaldoSqlite(): Observable<Blob> {
+    return this.http.get(`${API_URL}/respaldo/sqlite`, { responseType: 'blob' });
+  }
+
   // ---------- Historial ----------
   getHistorial(filtros: HistorialFiltros = {}): Observable<Historial[]> {
     return this.http.get<Historial[]>(`${API_URL}/historial`, { params: this.buildParams(filtros) });

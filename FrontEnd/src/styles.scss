@@ -209,6 +209,22 @@ button {
 .btn-sm { padding: 6px 11px; font-size: 0.82rem; }
 .btn-icon { padding: 8px; width: 36px; height: 36px; }
 
+/* Descargas (p. ej. Movimientos): borde = color principal, fondo = fondo
+   de la app. Se adapta a modo claro/oscuro vía variables CSS. */
+.export-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+.btn-export {
+  background: var(--bg);
+  border: 1px solid var(--primary);
+  color: var(--text);
+}
+.btn-export:hover { background: var(--primary-soft); }
+
 /* Forms */
 .field {
   display: flex;

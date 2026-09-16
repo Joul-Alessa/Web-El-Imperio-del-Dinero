@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import * as XLSX from 'xlsx';
 import { ApiService } from '../services/api.service';
 import {
   Movimiento, Persona, Cuenta, Divisa, Instrumento, Institucion, RevalorizacionPayload,
@@ -169,6 +170,16 @@ interface MovForm {
           </div>
         </div>
       }
+
+      <!-- Descargas -->
+      <div class="export-bar">
+        <button class="btn btn-export" (click)="descargarSqlite()" [disabled]="downloadingSqlite() || downloadingExcel()">
+          {{ downloadingSqlite() ? 'Descargando…' : '⬇️ Descargar base de datos (.sqlite3)' }}
+        </button>
+        <button class="btn btn-export" (click)="descargarExcel()" [disabled]="downloadingSqlite() || downloadingExcel()">
+          {{ downloadingExcel() ? 'Generando…' : '📊 Descargar movimientos (.xlsx)' }}
+        </button>
+      </div>
     </div>
 
     <app-confirm-modal
@@ -374,6 +385,8 @@ export class MovimientosComponent implements OnInit {
   instrumentos = signal<Instrumento[]>([]);
   instituciones = signal<Institucion[]>([]);
   loading = signal(true);
+  downloadingSqlite = signal(false);
+  downloadingExcel = signal(false);
   showForm = signal(false);
   form = signal<MovForm>(this.blank());
 
@@ -841,6 +854,90 @@ export class MovimientosComponent implements OnInit {
     if (m?.id) this.api.deleteMovimiento(m.id).subscribe(() => this.load());
   }
 
+  // ---------- Descargas ----------
+  // La DB original solo se lee (el backend sirve un snapshot vía VACUUM INTO):
+  // descargar no puede corromperla, con o sin Docker.
+
+  descargarSqlite() {
+    if (this.downloadingSqlite()) return;
+    this.downloadingSqlite.set(true);
+    this.api.downloadRespaldoSqlite().subscribe({
+      next: (blob) => {
+        this.downloadingSqlite.set(false);
+        this.triggerBlobDownload(blob, `imperio_del_dinero_${this.hoyLocal()}.sqlite3`, 'application/x-sqlite3');
+      },
+      error: () => {
+        this.downloadingSqlite.set(false);
+        this.errorMsg.set('No se pudo descargar el respaldo SQLite.');
+        this.showError.set(true);
+      },
+    });
+  }
+
+  descargarExcel() {
+    if (this.downloadingExcel()) return;
+    this.downloadingExcel.set(true);
+    // Respeta los filtros actuales (sin paginación: se exporta todo lo filtrado).
+    this.api.getMovimientos({
+      persona_id: this.fPersona ? [this.fPersona] : undefined,
+      cuenta_id: this.fCuenta ? [this.fCuenta] : undefined,
+      institucion_id: this.fInstitucion ? [this.fInstitucion] : undefined,
+      tipo: this.fTipo ?? undefined,
+      fecha_desde: this.fDesde ?? undefined,
+      fecha_hasta: this.fHasta ? `${this.fHasta}T23:59:59` : undefined,
+      busqueda: this.fBusqueda.trim() || undefined,
+    }).subscribe({
+      next: (rows) => {
+        this.downloadingExcel.set(false);
+        try {
+          const data = rows.map((m) => ({
+            'Fecha y hora': this.fmtFechaHoraExcel(m.fecha),
+            'Persona': m.persona_nombre ?? '',
+            'Tipo de movimiento': this.label(m.tipo),
+            'Cuenta': m.cuenta_nombre ?? '',
+            'Descripción': m.descripcion ?? '',
+            'Monto': Math.abs(Number(m.monto)),
+            'Divisa': m.divisa_codigo ?? '',
+          }));
+          const ws = XLSX.utils.json_to_sheet(data);
+          ws['!cols'] = [
+            { wch: 20 }, { wch: 22 }, { wch: 18 },
+            { wch: 24 }, { wch: 40 }, { wch: 14 }, { wch: 8 },
+          ];
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Movimientos');
+          XLSX.writeFile(wb, `movimientos_${this.timestampLocal()}.xlsx`);
+        } catch {
+          this.errorMsg.set('No se pudo generar el archivo Excel.');
+          this.showError.set(true);
+        }
+      },
+      error: () => {
+        this.downloadingExcel.set(false);
+        this.errorMsg.set('No se pudo obtener los movimientos para exportar.');
+        this.showError.set(true);
+      },
+    });
+  }
+
+  private triggerBlobDownload(blob: Blob, filename: string, mime: string) {
+    const typed = blob.type ? blob : new Blob([blob], { type: mime });
+    const url = URL.createObjectURL(typed);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  private timestampLocal(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
+  }
+
   signed(m: Movimiento): number {
     const v = Number(m.monto);
     return m.tipo === 'gasto' ? -Math.abs(v) : v;
@@ -856,4 +953,17 @@ export class MovimientosComponent implements OnInit {
 
   fmtFecha(dt: string): string { return this.splitDateTime(dt).fecha; }
   fmtHora(dt: string): string { return this.splitDateTime(dt).hora; }
+
+  // "YYYY-MM-DDTHH:MM(:SS)?" (o "YYYY-MM-DD") → "DD-MM-AAAA HH:MM:SS".
+  fmtFechaHoraExcel(dt: string): string {
+    let fecha = dt;
+    let hora = '00:00:00';
+    if (dt.includes('T')) {
+      fecha = dt.slice(0, 10);
+      hora = dt.slice(11, 19);
+      if (hora.length === 5) hora += ':00';
+    }
+    const [y, mo, d] = fecha.split('-');
+    return `${d}-${mo}-${y} ${hora}`;
+  }
 }
